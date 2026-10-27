@@ -21,3 +21,6 @@ docs/design-v3.1.md
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Windows shortcuts made on this machine (absolute paths): hyperion shortcut / OffLab start.lnk
+*.lnk

@@ -37,6 +37,7 @@ const HELP = `hyperion — schema from Dev, execute on Prod
   hyperion split <folderDir> ["<new collection name>"]          turn a folder into its own collection
   hyperion serve [dir] [--port 4321] [--open]           web UI (no dir = last project; switch projects in the UI)
   hyperion demo [--open]                                UI against a built-in mock API
+  hyperion shortcut                                     Windows: "Hyperion API" icon on the Desktop (opens its own window)
 `;
 
 const { values: o, positionals } = parseArgs({
@@ -85,6 +86,11 @@ async function main() {
   if (cmd === 'serve') {
     const { serve } = await import('../lib/server.mjs');
     return serve({ dir: args[0] ? path.resolve(args[0]) : undefined, port: Number(o.port ?? 4321), open: o.open });
+  }
+
+  if (cmd === 'shortcut') {
+    const { makeShortcut } = await import('../lib/shortcut.mjs');
+    return console.log(`✔ ${await makeShortcut()}`);
   }
 
   if (cmd === 'demo') {

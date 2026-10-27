@@ -7,6 +7,8 @@
     "hyperion": "bin/hyperion.mjs"
   },
   "scripts": {
+    "start": "node bin/hyperion.mjs serve --open",
+    "shortcut": "node bin/hyperion.mjs shortcut",
     "test": "node --test test/*.test.mjs"
   },
   "engines": {

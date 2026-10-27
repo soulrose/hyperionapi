@@ -1,30 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <!-- same tile as OffLab's .icons\hyperion-api.ico -->
-  <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#56C6F4"/>
-      <stop offset="1" stop-color="#0A5C9A"/>
-    </linearGradient>
-    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FF8A7A"/>
-      <stop offset="1" stop-color="#C82C24"/>
-    </linearGradient>
-    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFE278"/>
-      <stop offset="1" stop-color="#D2920E"/>
-    </linearGradient>
-    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".6"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".05"/>
-    </linearGradient>
-    <clipPath id="clip"><rect width="256" height="256" rx="30"/></clipPath>
-  </defs>
-  <rect width="256" height="256" rx="30" fill="url(#tile)"/>
-  <rect x="50" y="78" width="156" height="40" rx="20" fill="url(#red)" stroke="#fff" stroke-opacity=".8" stroke-width="3"/>
-  <rect x="51.5" y="79.5" width="153" height="17" rx="8.5" fill="#fff" fill-opacity=".42"/>
-  <rect x="50" y="140" width="108" height="40" rx="20" fill="url(#amber)" stroke="#fff" stroke-opacity=".8" stroke-width="3"/>
-  <rect x="51.5" y="141.5" width="105" height="17" rx="8.5" fill="#fff" fill-opacity=".42"/>
-  <circle cx="199" cy="193" r="23" fill="#fff" fill-opacity=".27" stroke="#fff" stroke-opacity=".8" stroke-width="3"/>
-  <ellipse cx="190" cy="183" rx="7" ry="5" fill="#fff" fill-opacity=".9"/>
-  <ellipse cx="128" cy="0" rx="179" ry="128" fill="url(#gloss)" clip-path="url(#clip)"/>
+  <!-- Hyperion: an H whose crossbar is a beam of light shot at a target (= sending a request).
+       Same drawing as OffLab's .icons\hyperion-api.ico (make-icons.ps1, Draw-Hyperion). -->
+  <rect width="256" height="256" rx="58" fill="#0f172a"/>
+  <rect x="51" y="59" width="29" height="139" rx="6" fill="#fff"/>
+  <rect x="139" y="59" width="29" height="139" rx="6" fill="#fff"/>
+  <rect x="66" y="119" width="135" height="20" rx="10" fill="#f5a524"/>
+  <path d="M194 104 L229 129 L194 154 Z" fill="#f5a524" stroke="#f5a524" stroke-width="4" stroke-linejoin="round"/>
+  <line x1="24" y1="129" x2="40" y2="129" stroke="#f5a524" stroke-width="8" stroke-linecap="round" opacity=".5"/>
 </svg>

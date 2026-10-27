@@ -11,6 +11,8 @@
 | ทางลัด | ทำอะไร |
 | :--- | :--- |
 | OffLab → **Hyperion API** (`start.bat`) | เปิด Hyperion เป็นหน้าต่างของตัวเอง (Edge app mode แบบ IssuePilot) กับโปรเจกต์ล่าสุดที่ใช้ — ไม่มีหน้าต่าง cmd; ปิดหน้าต่างแล้ว server หยุดเอง (log อยู่ที่ `server.log`); ครั้งแรกจะให้สร้างหรือเปิดโปรเจกต์ |
+| ไอคอน **Hyperion API** บน Desktop | สร้างครั้งเดียวด้วย `npm run shortcut` (หรือ `node bin/hyperion.mjs shortcut`) — ดับเบิลคลิกแล้วเปิดเป็นหน้าต่างของตัวเอง ไม่ต้องเปิดเบราว์เซอร์หรือพิมพ์ URL |
+| `npm start` | แบบเดียวกันจาก terminal (`serve --open`) — ใช้ได้ทุกระบบ |
 | OffLab → ปุ่ม **demo** (`start-demo.bat`) | เปิด demo กับ API จำลอง (prod ปิด introspection + dev) ลองได้ทันที — demo เริ่มใหม่ทุกครั้งที่เปิด |
 
 แก้อะไรก็บันทึกเอง: URL ในแถบแดง, query, variables, Authorization, Headers, flow, หน้าต่าง env และตั้งค่า collection — ไม่มีปุ่มบันทึก (Ctrl+S บันทึกทันที)
