@@ -16,6 +16,8 @@
 
 หน้าต่างจำขนาดและตำแหน่งล่าสุด (รวมถึงขยายเต็มจอ) แล้วเปิดครั้งหน้าแบบเดิม — เก็บที่ `%USERPROFILE%\.hyperion\window.json` · ใช้ได้แม้ Edge เปิดค้างอยู่เบื้องหลัง (Startup boost) ซึ่งไม่สน `--window-size` เพราะ Hyperion จัดหน้าต่างเองหลังเปิด
 กดโลโก้ **Hyperion** มุมซ้ายบนเพื่อดู About (เวอร์ชัน, ผู้พัฒนา)
+
+**ภาษา / Language:** UI เป็นภาษาอังกฤษเป็นค่าเริ่มต้น — เปลี่ยนเป็นไทยที่เมนูชื่อโปรเจกต์ → **Settings** → Language: ไทย (จำไว้ในเครื่อง) · ข้อความภาษาไทยอยู่ใน `public/i18n.js` (UI) และ `public/i18n-server.js` (ข้อความจาก server)
 | OffLab → ปุ่ม **demo** (`start-demo.bat`) | เปิด demo กับ API จำลอง (prod ปิด introspection + dev) ลองได้ทันที — demo เริ่มใหม่ทุกครั้งที่เปิด |
 
 แก้อะไรก็บันทึกเอง: URL ในแถบแดง, query, variables, Authorization, Headers, flow, หน้าต่าง env และตั้งค่า collection — ไม่มีปุ่มบันทึก (Ctrl+S บันทึกทันที)

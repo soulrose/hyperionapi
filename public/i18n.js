@@ -1,0 +1,369 @@
+// UI language: English by default, Thai as an option (Settings). No build step.
+import { SERVER_TH } from './i18n-server.js';
+
+const KEY = 'hyperion.lang';
+const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
+
+export const lang = read() === 'th' ? 'th' : 'en';
+
+// English text (the key) → Thai
+const TH = {
+  'just now': 'เมื่อสักครู่',
+  '{m} min ago': '{m} นาทีก่อน',
+  '{n} h ago': '{n} ชม.ก่อน',
+  '{n} d ago': '{n} วันก่อน',
+  '{name} — protected: a mutation must be confirmed before sending': '{name} — protected: mutation ต้องยืนยันก่อนยิง',
+  '<p class="empty">No collections yet — create one, or Import from Postman</p>': '<p class="empty">ยังไม่มี collection — สร้างใหม่ หรือ Import จาก Postman</p>',
+  'Collapse / expand {name}': 'ย่อ / ขยาย {name}',
+  'Name, type, URL, auth, headers and delete for {name}': 'ชื่อ ชนิด URL auth headers และลบ {name}',
+  'Settings': 'ตั้งค่า',
+  'Add a request to {name}': 'เพิ่ม request ใน {name}',
+  '<p class="group-empty">Empty — <button>add the first request</button></p>': '<p class="group-empty">ว่าง — <button>เพิ่ม request แรก</button></p>',
+  'Split': 'แยก',
+  'Split this folder into a new collection': 'แยกโฟลเดอร์นี้ออกเป็น collection ใหม่',
+  'No project open': 'ยังไม่ได้เปิดโปรเจกต์',
+  'Version {version}': 'เวอร์ชัน {version}',
+  'Open project folder': 'เปิดโฟลเดอร์โปรเจกต์',
+  'Paste the path of a folder that contains hyperion.yaml (e.g. a folder in the project repo)': 'วาง path ของโฟลเดอร์ที่มี hyperion.yaml (เช่นโฟลเดอร์ใน repo ของโปรเจกต์)',
+  'Open': 'เปิด',
+  'New project': 'สร้างโปรเจกต์ใหม่',
+  'Creates hyperion.yaml, envs dev / test / prod / training and a sample collection — existing files are never overwritten': 'สร้าง hyperion.yaml, env dev / test / prod / training และ collection ตัวอย่าง — ไฟล์ที่มีอยู่แล้วจะไม่ถูกทับ',
+  'Project name': 'ชื่อโปรเจกต์',
+  'Folder': 'โฟลเดอร์',
+  'Create project': 'สร้างโปรเจกต์',
+  'Variable name': 'ชื่อตัวแปร',
+  'Value': 'ค่า',
+  'Remove': 'ลบ',
+  'Remove this variable': 'ลบตัวแปรนี้',
+  'Variables of {env}': 'ตัวแปรของ {env}',
+  'Saved to {file} · enter the full URL, e.g. https://dev-host/graphql · enter passwords as {{secret:NAME}} and keep the real value in secrets.local.yaml': 'บันทึกลง {file} · URL ใส่เต็ม เช่น https://dev-host/graphql · รหัสผ่านใส่เป็น {{secret:NAME}} แล้วเก็บค่าจริงใน secrets.local.yaml',
+  'Protected — show a red warning bar: this is real data': 'Protected — แสดงแถบเตือนสีแดงว่าเป็นข้อมูลจริง',
+  'Save env': 'บันทึก env',
+  'None': 'ไม่มี',
+  'Other login (JSON)': 'Login อื่น (JSON)',
+  'Settings for {name}': 'ตั้งค่า {name}',
+  ' (other envs: {list})': ' (env อื่น: {list})',
+  'Applies to every request in this collection · the selected Auth is for env {envTitle} only{other}': 'ใช้กับทุก request ใน collection นี้ · Auth ที่เลือกเป็นของ env {envTitle} เท่านั้น{other}',
+  ' · moved to secrets.local.yaml: {list}': ' · ย้ายไป secrets.local.yaml: {list}',
+  '{time}  {name}: pulled {count} variables from Postman{current}{secrets}': '{time}  {name}: ดึง {count} ตัวแปรจาก Postman{current}{secrets}',
+  'Every env now uses this auth': 'ทุก env ใช้ auth นี้แล้ว',
+  'This collection is not set up as a login yet': 'collection นี้ยังไม่ได้ตั้งเป็น login',
+  ' — valid for {left} more min': ' — ใช้ได้อีก {left} นาที',
+  ' · has a refresh token (renews itself)': ' · มี refresh token (ต่ออายุเอง)',
+  'Got a token{valid}{refresh}': 'ได้ token แล้ว{valid}{refresh}',
+  'Click again to confirm — deletes {name} and {count} requests (moved to .hyperion/trash, recoverable)': 'กดอีกครั้งเพื่อยืนยัน — ลบ {name} และ {count} request (ย้ายไป .hyperion/trash กู้คืนได้)',
+  ' · flows using its requests: {list}': ' · flow ที่ใช้ request ในนี้: {list}',
+  '{time}  deleted collection {name} ({n} requests) → {trash}{flows}': '{time}  ลบ collection {name} ({n} request) → {trash}{flows}',
+  'Collection name': 'ชื่อ collection',
+  'Type': 'ชนิด',
+  'Token (sent as Authorization: Bearer …)': 'Token (ส่งเป็น Authorization: Bearer …)',
+  'Send in': 'ส่งใน',
+  'Name': 'ชื่อ',
+  'Token URL (for env {envTitle})': 'Token URL (ของ env {envTitle})',
+  'Stored — leave empty to keep it': 'เก็บไว้แล้ว — เว้นว่างถ้าไม่เปลี่ยน',
+  'Stored in secrets.local.yaml (not in Git)': 'เก็บใน secrets.local.yaml (ไม่เข้า Git)',
+  'Client secret (if the client has one)': 'Client secret (ถ้า client มี)',
+  'Optional': 'ไม่บังคับ',
+  'Test login': 'ทดสอบ login',
+  'Response field that holds the token': 'Token อยู่ที่ field ไหนของ response',
+  'Refresh URL (optional)': 'Refresh URL (ไม่บังคับ)',
+  'Use this auth for every env': 'ใช้ auth นี้กับทุก env',
+  'Headers (sent with every request)': 'Headers (ส่งทุก request)',
+  'Collection variables (use as {{name}} — env values override them)': 'Variables ของ collection (ใช้เป็น {{ชื่อ}} — ค่าใน env ทับได้)',
+  '+ Variable': '+ ตัวแปร',
+  'Pull values from Postman': 'ดึงค่าจาก Postman',
+  'Delete this collection': 'ลบ collection นี้',
+  'Save': 'บันทึก',
+  'The Login body must be JSON': 'Body ของ Login ต้องเป็น JSON',
+  'Saved': 'บันทึกแล้ว',
+  'Could not save: {error}': 'บันทึกไม่ได้: {error}',
+  'fixed host': 'host ตายตัว',
+  'This URL has the host written in the file — dev / test / prod all go to the same place · click "Use host per env" to split it per env': 'URL นี้เขียน host ไว้ในไฟล์ — เลือก dev / test / prod ก็ยิงไปที่เดิม · กด "ใช้ host ตาม env" เพื่อแยกตาม env',
+  'not set': 'ยังไม่ได้ตั้ง',
+  '(not set)': '(ยังไม่ได้ตั้ง)',
+  '{name} = {value}{prod}\nClick to edit the value in env': '{name} = {value}{prod}\nคลิกเพื่อแก้ค่าใน env',
+  'in the request': 'ใน request',
+  'Use host per env': 'ใช้ host ตาม env',
+  ' · this host looks like prod, but {env} is selected — make sure the {env} box is right': ' · host นี้ดูเหมือนของ prod แต่ตอนนี้เลือก {env} อยู่ — ตรวจช่อง {env} ให้ถูก',
+  'URLs starting with a ticked host become {{variable}}/path and each env gets its own host — empty envs can be filled in later with Edit env{prod}': 'URL ที่ขึ้นต้นด้วย host ที่ติ๊กจะกลายเป็น {{ชื่อตัวแปร}}/path แล้วแต่ละ env ใส่ host ของตัวเอง — env ที่เว้นว่างใส่ทีหลังได้ที่ แก้ env{prod}',
+  ' (selected env)': ' (env ที่เลือกอยู่)',
+  'host for {env}{sel}': 'host ของ {env}{sel}',
+  'http://…:8080 (may be empty)': 'http://…:8080 (เว้นว่างได้)',
+  'Change': 'เปลี่ยน',
+  '{time}  host → {{{name}}} in {n} requests': '{time}  host → {{{name}}} ใน {n} request',
+  'Close': 'ปิด',
+  'Saved {time}': 'บันทึกแล้ว {time}',
+  'Working…': 'กำลังทำ…',
+  'Done': 'สำเร็จ',
+  'Don\'t copy — start empty': 'ไม่คัดลอก — เริ่มจากค่าว่าง',
+  'New collection': 'Collection ใหม่',
+  'Auth, headers and the schema source can be copied from an existing collection, so the login need not be set up again': 'คัดลอก auth, headers และแหล่ง schema จาก collection ที่มีอยู่ได้ ไม่ต้องตั้ง login ใหม่',
+  'e.g. Pharmacy API': 'เช่น Pharmacy API',
+  'Copy settings from': 'คัดลอกการตั้งค่าจาก',
+  'Empty = the source collection\'s URL, or {{GQL_URL}} / {{BASE_URL}}': 'เว้นว่าง = ใช้ของ collection ต้นแบบ หรือ {{GQL_URL}} / {{BASE_URL}}',
+  'Create collection': 'สร้าง collection',
+  'New request in {name}': 'Request ใหม่ใน {name}',
+  'e.g. Get Lab Results': 'เช่น Get Lab Results',
+  'Folder (optional)': 'โฟลเดอร์ (ไม่บังคับ)',
+  'e.g. lab': 'เช่น lab',
+  'Create request': 'สร้าง request',
+  'Move "{name}"': 'ย้าย "{name}"',
+  'The request will use the URL, auth and headers of the target collection': 'request จะใช้ URL, auth และ headers ของ collection ปลายทาง',
+  'To collection': 'ไปที่ collection',
+  'Move': 'ย้าย',
+  'Split "{folder}" into a new collection': 'แยก "{folder}" เป็น collection ใหม่',
+  'Moves {count} requests out of {col} — the new collection uses the same auth, headers and schema as {col}; you can change them later': 'ย้าย {count} request ออกจาก {col} — collection ใหม่ใช้ auth, headers และ schema แบบเดียวกับ {col} แก้ทีหลังได้',
+  'New collection name': 'ชื่อ collection ใหม่',
+  'Split collection': 'แยก collection',
+  'Enter the {envTitle} URL, e.g. https://dev-host/graphql': 'ใส่ URL ของ {envTitle} เช่น https://dev-host/graphql',
+  '{name} value of env {envTitle} — saved automatically when edited': 'ค่า {name} ของ env {envTitle} — แก้แล้วบันทึกให้เอง',
+  'URL of this request — saved automatically when edited': 'URL ของ request นี้ — แก้แล้วบันทึกให้เอง',
+  'Autosave': 'บันทึกอัตโนมัติ',
+  '<p class="hint">This request has no scripts — write them in the .req.yaml file under scripts:</p>': '<p class="hint">request นี้ไม่มี script — เขียนได้ในไฟล์ .req.yaml ส่วน scripts:</p>',
+  '{kind} — no GraphQL schema': '{kind} — ไม่ใช้ GraphQL schema',
+  'REST request — no schema': 'REST request — ไม่ใช้ schema',
+  '{env} itself': '{env} เอง',
+  ' (borrowed cache)': ' (ยืม cache)',
+  ' · fetched {ago}': ' · ดึงล่าสุด {ago}',
+  ' · <span class="drift">cache expired</span>': ' · <span class="drift">cache หมดอายุ</span>',
+  ' · <span class="drift">{env} answered {code} — put a token in the Authorization tab and the {env} schema loads by itself</span>': ' · <span class="drift">{env} ตอบ {code} — ใส่ token ในแท็บ Authorization แล้วจะโหลด schema ของ {env} เอง</span>',
+  'No schema yet — enter a URL in the box above and the schema loads by itself': 'ยังไม่มี schema — ใส่ URL ในช่องด้านบน แล้ว schema จะโหลดเอง',
+  'No schema yet': 'ยังไม่มี schema',
+  'No token yet — will log in when you press Send': 'ยังไม่มี token — จะ login ให้ตอนกด Send',
+  'token: {left} min left': 'token เหลือ {left} นาที',
+  'Has a token (expiry unknown)': 'มี token (ไม่ทราบเวลาหมดอายุ)',
+  'Stored in {env}.local.env.yaml → {var}': 'เก็บใน {env}.local.env.yaml → {var}',
+  'Variables is not valid JSON: {error}': 'Variables ไม่ใช่ JSON ที่ถูกต้อง: {error}',
+  '{type} · from {src}': '{type} · จาก {src}',
+  'Enter the .proto file path, then pick a method': 'ใส่ path ของไฟล์ .proto แล้วเลือก method',
+  '{n} methods in {file}': '{n} method ใน {file}',
+  'Lost the connection to Hyperion — press Connect again': 'หลุดจาก Hyperion — กด Connect ใหม่',
+  'Disconnected': 'ปิดการเชื่อมต่อแล้ว',
+  'Received': 'รับ',
+  'Sent': 'ส่ง',
+  'Status': 'สถานะ',
+  'Stop stream': 'หยุด stream',
+  'Not invoked yet': 'ยังไม่ได้เรียก',
+  'Not connected': 'ยังไม่ได้เชื่อมต่อ',
+  'Connected': 'เชื่อมต่ออยู่',
+  'Connecting…': 'กำลังเชื่อมต่อ…',
+  'Closed': 'ปิดแล้ว',
+  '{n} messages': '{n} ข้อความ',
+  'Press Invoke to call the method — the stream shows one message at a time': 'กด Invoke เพื่อเรียก method — stream จะแสดงทีละข้อความ',
+  'Press Connect to connect, then Send to send the message in the box above': 'กด Connect เพื่อเชื่อมต่อ แล้วกด Send เพื่อส่งข้อความในช่องด้านบน',
+  'Pick a method first': 'เลือก method ก่อน',
+  'Send mutation {name}?': 'ยิง mutation {name}?',
+  'To {env} — real data · the mutation changes data in the system': 'ไปที่ {env} — ข้อมูลจริง · mutation จะเปลี่ยนข้อมูลในระบบ',
+  'OK': 'ตกลง',
+  'Blocked': 'ถูกบล็อก',
+  'Failed': 'ล้มเหลว',
+  '<div class="empty">No body</div>': '<div class="empty">ไม่มี body</div>',
+  '<div class="empty">This request has no tests — write $test(...) in afterResponse</div>': '<div class="empty">request นี้ไม่มี test — เขียน $test(...) ใน afterResponse</div>',
+  '<div class="empty">No log yet — login / token renewal / schema sync show up here</div>': '<div class="empty">ยังไม่มี log — การ login / ต่ออายุ token / sync schema จะแสดงที่นี่</div>',
+  'Login (auto-renew)': 'Login (ต่ออายุอัตโนมัติ)',
+  '<option value="keep">{label} (set in file)</option>': '<option value="keep">{label} (ตั้งในไฟล์)</option>',
+  'Uses the collection auth: {label} — change it with the collection Settings button': 'ใช้ auth ของ collection: {label} — แก้ได้ที่ปุ่ม ตั้งค่า ของ collection',
+  'Also sent, from the collection (a header above with the same name overrides it)': 'ส่งด้วยจาก collection (header ชื่อเดียวกันข้างบนจะทับ)',
+  'Stored the {env} token in {file} (not in Git) · paste a new token to replace it': 'เก็บ token ของ {env} ไว้ใน {file} แล้ว (ไม่เข้า Git) · วาง token ใหม่ทับได้เลย',
+  '{env} token: {preview} (stored in envs/{name}.local.env.yaml) · paste a new token to change it': 'token ของ {env}: {preview} (เก็บใน envs/{name}.local.env.yaml) · วาง token ใหม่เพื่อเปลี่ยน',
+  'env {env} has no token yet — paste a token in this box': 'env {env} ยังไม่มี token — วาง token ที่ช่องนี้',
+  'Could not store the token: {error}': 'เก็บ token ไม่ได้: {error}',
+  'Not saved yet…': 'ยังไม่บันทึก…',
+  'Variables is not JSON — not saved': 'Variables ไม่ใช่ JSON — ยังไม่บันทึก',
+  'Loading schema…': 'กำลังโหลด schema…',
+  ' <span class="drift">— could not load, see the Log tab</span>': ' <span class="drift">— โหลดไม่ได้ ดูแท็บ Log</span>',
+  'Sync now': 'sync ใหม่',
+  'Click to rename': 'คลิกเพื่อเปลี่ยนชื่อ',
+  'Renamed {time}': 'เปลี่ยนชื่อแล้ว {time}',
+  'Could not rename: {error}': 'เปลี่ยนชื่อไม่ได้: {error}',
+  'Delete': 'ลบ',
+  'Click again to delete': 'กดอีกครั้งเพื่อลบ',
+  ' · flows still using this request: {list}': ' · flow ที่ยังใช้ request นี้: {list}',
+  '{time}  deleted {name} → {trash}{flows}': '{time}  ลบ {name} → {trash}{flows}',
+  '<p class="hint">Reading…</p>': '<p class="hint">กำลังอ่าน…</p>',
+  '<p class="hint">Postman desktop was not found on this computer</p>': '<p class="hint">ไม่พบ Postman desktop ในเครื่องนี้</p>',
+  '<p class="hint">No GraphQL requests found in Postman</p>': '<p class="hint">ไม่พบ request แบบ GraphQL ใน Postman</p>',
+  ' · {n} more with only a name': ' · อีก {n} ตัวมีแต่ชื่อ',
+  'Name only — open them once in Postman, then import again': 'ตัวที่มีแต่ชื่อ — เปิดใน Postman หนึ่งครั้งแล้วนำเข้าใหม่',
+  'Import selected collections': 'นำเข้า collection ที่เลือก',
+  'Importing…': 'กำลังนำเข้า…',
+  'new {created}, updated {updated}': 'ใหม่ {created}, อัปเดต {updated}',
+  '<p class="hint">No schema yet — enter a URL in the bar above and the fields show up here</p>': '<p class="hint">ยังไม่มี schema — ใส่ URL ในแถบด้านบน แล้ว field จะขึ้นที่นี่เอง</p>',
+  'Open {name}': 'เปิด {name}',
+  ' disabled title="Required"': ' disabled title="ต้องมี"',
+  'Send {name}': 'ส่ง {name}',
+  ' disabled title="The value is written directly in the query"': ' disabled title="ค่าเขียนตรงใน query"',
+  'All fields': 'ทุก field',
+  'Expand': 'ขยาย',
+  'Collapse': 'ย่อ',
+  'Create a new flow': 'สร้าง flow ใหม่',
+  '<p class="group-empty">No flows yet — <button>create the first flow</button></p>': '<p class="group-empty">ยังไม่มี flow — <button>สร้าง flow แรก</button></p>',
+  'New flow': 'Flow ใหม่',
+  'A flow runs requests from any collection in order, passing values along with $flow.set / pm.environment.set': 'flow รัน request จากทุก collection ตามลำดับ ส่งค่าต่อกันด้วย $flow.set / pm.environment.set',
+  'Flow name': 'ชื่อ flow',
+  'Create flow': 'สร้าง flow',
+  '<span class="fstat idle">Not run</span>': '<span class="fstat idle">ไม่ได้รัน</span>',
+  '<span class="fstat idle">Skipped (condition not met)</span>': '<span class="fstat idle">ข้าม (เงื่อนไขไม่ผ่าน)</span>',
+  '<span class="fstat fail">Blocked (protected env)</span>': '<span class="fstat fail">ถูกกัน (env protected)</span>',
+  'Show this block\'s result': 'ดูผลของ block นี้',
+  'Not found: {request}': 'ไม่พบ {request}',
+  'Condition': 'เงื่อนไข',
+  'Optional, e.g. $flow.get(\'visitId\')': 'ไม่บังคับ เช่น $flow.get(\'visitId\')',
+  'Continue even if it fails': 'ไปต่อแม้ไม่ผ่าน',
+  'Up': 'ขึ้น',
+  'Move up': 'เลื่อนขึ้น',
+  'Down': 'ลง',
+  'Move down': 'เลื่อนลง',
+  'Open this request': 'เปิด request นี้',
+  'Remove this block': 'เอา block นี้ออก',
+  'flow stopped at block {n}': 'flow หยุดที่ block {n}',
+  'flow passed': 'flow ผ่านทั้งหมด',
+  'No requests in the project yet': 'ยังไม่มี request ในโปรเจกต์',
+  'Add block': 'เพิ่ม block',
+  'Pick the request to run in the flow (from any collection)': 'เลือก request ที่จะรันใน flow (จาก collection ไหนก็ได้)',
+  'Add': 'เพิ่ม',
+  'Delete flow "{name}"? (deletes the file {file})': 'ลบ flow "{name}"? (ลบไฟล์ {file})',
+  'token expired — will renew automatically when sending': 'token หมดอายุ — จะต่ออายุอัตโนมัติตอนยิง',
+  'token expired — will log in again automatically when sending': 'token หมดอายุ — จะ login ใหม่อัตโนมัติตอนยิง',
+  'Open folder…': 'เปิดโฟลเดอร์…',
+  'New project…': 'สร้างโปรเจกต์ใหม่…',
+  'About Hyperion': 'เกี่ยวกับ Hyperion',
+  'Language': 'ภาษา',
+  'Edit this env\'s URLs and variables': 'แก้ URL และตัวแปรของ env นี้',
+  'Edit env': 'แก้ env',
+  'Get a new token now': 'ขอ token ใหม่ตอนนี้',
+  'Renew': 'ต่ออายุ',
+  'Remove the token stored in the env': 'ลบ token ที่เก็บไว้ใน env',
+  'Clear': 'ล้าง',
+  'Production — requests go to real data': 'Production — ยิงไปที่ข้อมูลจริง',
+  'Send to': 'ยิงไปที่',
+  'Pick a request on the left': 'เลือก request ทางซ้าย',
+  'Turn this host into an env variable in every request that uses it': 'เปลี่ยน host ในทุก request ที่ใช้ host นี้ให้เป็นตัวแปรของ env',
+  'Close this connection': 'ปิดการเชื่อมต่อนี้',
+  'Schema from': 'Schema จาก',
+  'Reload the schema now (it normally loads by itself)': 'โหลด schema ใหม่ตอนนี้ (ปกติโหลดเอง)',
+  'Open a project': 'เปิดโปรเจกต์',
+  'Hyperion works with any project — a project is a folder that contains': 'Hyperion ใช้ได้กับทุกโปรเจกต์ — โปรเจกต์คือโฟลเดอร์ที่มี',
+  '(you can keep it right in that project\'s repo)': '(ใส่ไว้ใน repo ของโปรเจกต์นั้นได้เลย)',
+  'Search requests': 'ค้นหา request',
+  'Create a new collection': 'สร้าง collection ใหม่',
+  'Import a Postman collection / environment': 'นำเข้า Postman collection / environment',
+  'Drag to resize request / response (double-click to reset)': 'ลากเพื่อปรับความกว้าง request / response (ดับเบิลคลิกคืนค่าเดิม)',
+  'Move this request to another collection': 'ย้าย request นี้ไป collection อื่น',
+  'Move…': 'ย้าย…',
+  'Delete this request (moved to .hyperion/trash, recoverable)': 'ลบ request นี้ (ย้ายไป .hyperion/trash กู้คืนได้)',
+  'Edits are saved to the file automatically (Ctrl+S saves now)': 'แก้แล้วบันทึกลงไฟล์ให้เอง (Ctrl+S บันทึกทันที)',
+  'Search fields': 'ค้นหา field',
+  'Collapse the field list': 'ย่อรายการ field',
+  'Expand the field list': 'ขยายรายการ field',
+  'Drag to resize (double-click to reset)': 'ลากเพื่อปรับความกว้าง (ดับเบิลคลิกคืนค่าเดิม)',
+  'Optional, e.g. graphql-ws': 'ไม่บังคับ เช่น graphql-ws',
+  'Wait for ack': 'รอ ack',
+  'Auth payload (on connect)': 'Auth payload (ตอน connect)',
+  'Empty = send {"token": …} from Authorization': 'ว่าง = ส่ง {"token": …} จาก Authorization',
+  '.proto file': 'ไฟล์ .proto',
+  'protos/service.proto (from the project folder, or a full path)': 'protos/service.proto (จากโฟลเดอร์โปรเจกต์ หรือ path เต็ม)',
+  'Insert a sample message for this method': 'ใส่ message ตัวอย่างของ method นี้',
+  'Sample message': 'ตัวอย่าง message',
+  'Drag up / down to resize (double-click to reset)': 'ลากขึ้น / ลงเพื่อปรับความสูง (ดับเบิลคลิกคืนค่าเดิม)',
+  'JSON — env {{variables}} can be used': 'JSON — ใช้ {{ชื่อตัวแปร}} จาก env ได้',
+  'Collapse / expand Variables': 'ย่อ / ขยาย Variables',
+  'Inherit from collection': 'ใช้ของ collection',
+  'Paste the token here': 'วาง token ที่นี่',
+  'Paste a token and it is stored in the selected env (a .local file, not in Git) and': 'วาง token แล้วระบบเก็บไว้ใน env ที่เลือกอยู่ (ไฟล์ .local ไม่เข้า Git) และใส่',
+  'is put here · sent as': 'ให้ · ส่งเป็น',
+  'Delete this flow file': 'ลบไฟล์ flow นี้',
+  'Delete flow': 'ลบ flow',
+  'Not sent yet': 'ยังไม่ได้ยิง',
+  'Show patient data': 'แสดงข้อมูลผู้ป่วย',
+  'Press Send to send the request — the response shows up here': 'กด Send เพื่อยิง request — response จะแสดงที่นี่',
+  'An API testing tool for every project': 'เครื่องมือทดสอบ API ที่ใช้ได้ทุกโปรเจกต์',
+  'Supports': 'รองรับ',
+  'Developer': 'ผู้พัฒนา',
+  'Cancel': 'ยกเลิก',
+  'Import from Postman': 'นำเข้าจาก Postman',
+  'From Postman on this computer (GraphQL requests included)': 'จาก Postman ในเครื่องนี้ (รวม request แบบ GraphQL)',
+  'Reads straight from the installed Postman app — no export needed, nothing in Postman is changed': 'อ่านจากโปรแกรม Postman ที่ติดตั้งอยู่โดยตรง — ไม่ต้อง export, ไม่แก้อะไรใน Postman',
+  'Read from Postman': 'อ่านจาก Postman',
+  'From exported files': 'จากไฟล์ที่ export',
+  'A Collection (v2.1) or Environment exported as .json — requests become *.req.yaml, env secrets move to secrets.local.yaml': 'Collection (v2.1) หรือ Environment ที่ export เป็น .json — request แปลงเป็น *.req.yaml, ค่า secret ของ env ย้ายไป secrets.local.yaml',
+  'Drop .json files here or click to choose': 'ลากไฟล์ .json มาวาง หรือคลิกเพื่อเลือก',
+  'Or paste a cURL / GraphQL query': 'หรือวาง cURL / GraphQL query',
+  'Postman cannot export GraphQL requests — open the request in Postman and copy': 'request แบบ GraphQL ของ Postman export ไม่ได้ — เปิด request นั้นใน Postman แล้วคัดลอก',
+  'or copy the query from the Query tab and paste it here': 'หรือคัดลอก query จากแท็บ Query มาวางที่นี่',
+  'Into collection': 'ใส่ใน collection',
+  'Request name (optional)': 'ชื่อ request (ไม่บังคับ)',
+  'curl \'https://…/graphql\' -H \'Authorization: Bearer …\' --data-raw \'{"query":"…"}\'\n\nor\n\nquery Api {\n  api { id }\n}': 'curl \'https://…/graphql\' -H \'Authorization: Bearer …\' --data-raw \'{"query":"…"}\'\n\nหรือ\n\nquery Api {\n  api { id }\n}',
+  'Import pasted text': 'นำเข้าจากที่วาง',
+};
+
+const fill = (s, vars) => (vars ? s.replace(/\{(\w+)\}/g, (m, k) => (Object.hasOwn(vars, k) ? String(vars[k]) : m)) : s);
+
+/** UI text: `t('Saved {time}', { time })` */
+export function t(en, vars) {
+  return fill(lang === 'th' ? TH[en] ?? en : en, vars);
+}
+
+// server templates: only {digits} are placeholders, everything else is literal
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+let serverRules;
+const rules = () =>
+  (serverRules ??= SERVER_TH.map(([en, th]) => {
+    const order = [];
+    const src = en.split(/(\{\d+\})/).map((part) => {
+      const m = /^\{(\d+)\}$/.exec(part);
+      if (!m) return escRe(part);
+      order.push(m[1]);
+      return '(.+?)';
+    }).join('');
+    return { re: new RegExp(`^${src}$`, 's'), order, th };
+  }));
+
+/** text that came from the server: translated in Thai mode when it matches a known template (first match wins) */
+export function tr(message) {
+  if (lang !== 'th' || typeof message !== 'string' || !message) return message;
+  for (const { re, order, th } of rules()) {
+    const m = re.exec(message);
+    if (!m) continue;
+    const vals = Object.fromEntries(order.map((n, i) => [n, m[i + 1]]));
+    return th.replace(/\{(\d+)\}/g, (all, n) => (Object.hasOwn(vals, n) ? vals[n] : all));
+  }
+  return message;
+}
+
+export function setLang(l) {
+  try { localStorage.setItem(KEY, l === 'th' ? 'th' : 'en'); } catch {}
+  location.reload();
+}
+
+// the element's own text: its text when it has no child elements, otherwise its first non-blank text node
+function textTarget(el) {
+  if (!el.children.length) return { get: () => el.textContent, set: (v) => (el.textContent = v) };
+  const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+  if (!node) return null;
+  return {
+    get: () => node.textContent,
+    set: (v) => {
+      const [, lead, , trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(node.textContent);
+      node.textContent = lead + v + trail;
+    },
+  };
+}
+
+/** static HTML: data-i18n (text), data-i18n-title, data-i18n-placeholder, data-i18n-aria (aria-label); value = English key, empty = current text */
+export function applyDom(root = document) {
+  document.documentElement.lang = lang;
+  for (const el of root.querySelectorAll('[data-i18n]')) {
+    const target = textTarget(el);
+    if (!target) continue;
+    const key = el.dataset.i18n || target.get().trim();
+    target.set(t(key));
+  }
+  for (const [attr, prop] of [['i18nTitle', 'title'], ['i18nPlaceholder', 'placeholder'], ['i18nAria', 'aria-label']]) {
+    const sel = `[data-${attr.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}]`;
+    for (const el of root.querySelectorAll(sel)) {
+      const key = el.dataset[attr] || el.getAttribute(prop) || '';
+      if (key) el.setAttribute(prop, t(key));
+    }
+  }
+}

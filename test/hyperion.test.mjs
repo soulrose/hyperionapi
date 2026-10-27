@@ -406,7 +406,7 @@ test('paste import: cURL (bash and Windows cmd) and a bare GraphQL query', async
 
   const q = await importPaste(p.project, { text: 'query Ping {\n  ping\n}', collection: 'collections/sample' });
   assert.equal(q.name, 'Ping');
-  await assert.rejects(importPaste(p.project, { text: 'query {', collection: 'collections/sample' }), /GraphQL ไม่ถูกต้อง/);
+  await assert.rejects(importPaste(p.project, { text: 'query {', collection: 'collections/sample' }), /Invalid GraphQL/);
 });
 
 
@@ -693,6 +693,10 @@ test('realtime in the app: WebSocket / Socket.IO requests (env URL + collection 
     assert.deepEqual([opened.fixedHost, opened.hostVar], [null, { name: 'NODE', value: 'http://d-node:8080', prod: { env: 'Prod (mock)', value: 'http://prod-node:8080' } }]);
     await call('/api/save', { file: r1, name: 'Get A (renamed)' });
     assert.ok((await call('/api/tree')).requests.some((r) => r.file === r1 && r.name === 'Get A (renamed)'));
+
+    // saving settings with the auth unchanged, on a collection with no per-env auth yet (used to fail with a YAML error)
+    const sampleAuth = (await call('/api/collection/settings?dir=collections/sample&env=dev')).auth;
+    assert.equal((await call('/api/collection/settings', { dir: 'collections/sample', env: 'dev', auth: sampleAuth })).saved, true);
 
     // collection variables: edited in settings, a key / password value goes to secrets.local.yaml
     await call('/api/collection/settings', { dir: rest.dir, variables: { baseUrl: 'http://gw/x', apiKey: 'k-123', hn: '42' } });

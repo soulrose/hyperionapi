@@ -1,4 +1,8 @@
 // Hyperion UI — plain JS, no build step.
+import { t, tr, applyDom, lang, setLang } from './i18n.js';
+
+applyDom();
+
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const store = {
@@ -11,7 +15,7 @@ const state = { tree: null, env: null, req: null, result: null, schema: null, lo
 async function api(path, body) {
   const res = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined);
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(tr(data.error ?? `HTTP ${res.status}`));
   return data;
 }
 
@@ -101,10 +105,10 @@ function mask(value, fields) {
 // ---------- time helpers ----------
 const ago = (iso) => {
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
-  if (m < 1) return 'เมื่อสักครู่';
-  if (m < 60) return `${m} นาทีก่อน`;
-  if (m < 1440) return `${Math.round(m / 60)} ชม.ก่อน`;
-  return `${Math.round(m / 1440)} วันก่อน`;
+  if (m < 1) return t('just now');
+  if (m < 60) return t('{m} min ago', { m });
+  if (m < 1440) return t('{n} h ago', { n: Math.round(m / 60) });
+  return t('{n} d ago', { n: Math.round(m / 1440) });
 };
 const kb = (n) => (n == null ? '' : n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
 // personal-data fields hidden in flow results (each request's own collection list applies in the request view)
@@ -130,7 +134,7 @@ async function loadTree(pickFirst = true) {
     const b = document.createElement('button');
     b.role = 'radio';
     b.textContent = e.title ?? e.name;
-    b.title = e.protected ? `${e.name} — protected: mutation ต้องยืนยันก่อนยิง` : e.name;
+    b.title = e.protected ? t('{name} — protected: a mutation must be confirmed before sending', { name: e.name }) : e.name;
     b.className = e.protected ? 'protected' : '';
     b.dataset.env = e.name;
     b.onclick = () => selectEnv(e.name);
@@ -182,7 +186,7 @@ function renderSide() {
   tree.innerHTML = '';
   const cols = state.tree.collections ?? [];
   if (!cols.length) {
-    tree.innerHTML = '<p class="empty">ยังไม่มี collection — สร้างใหม่ หรือ Import จาก Postman</p>';
+    tree.innerHTML = t('<p class="empty">No collections yet — create one, or Import from Postman</p>');
     return renderFlowList(q);
   }
   // one section per type: GraphQL, REST, gRPC, WebSocket (with Socket.IO)
@@ -200,7 +204,7 @@ function renderSide() {
     // fold / unfold a collection (remembered per project); searching shows matches even in folded ones
     const folded = foldedCols().has(col.dir) && !q;
     g.className = `group${folded ? ' folded' : ''}`;
-    g.innerHTML = `<div class="group-head"><button class="col-fold" aria-expanded="${!folded}" title="ย่อ / ขยาย ${esc(col.name)}"><h3 title="${esc(col.dir)}">${esc(col.name)}</h3><small>${reqs.length}</small></button><button class="icon-btn col-settings" title="ชื่อ ชนิด URL auth headers และลบ ${esc(col.name)}">ตั้งค่า</button><button class="icon-btn col-add" title="เพิ่ม request ใน ${esc(col.name)}">+ request</button></div>`;
+    g.innerHTML = `<div class="group-head"><button class="col-fold" aria-expanded="${!folded}" title="${t('Collapse / expand {name}', { name: esc(col.name) })}"><h3 title="${esc(col.dir)}">${esc(col.name)}</h3><small>${reqs.length}</small></button><button class="icon-btn col-settings" title="${t('Name, type, URL, auth, headers and delete for {name}', { name: esc(col.name) })}">${t('Settings')}</button><button class="icon-btn col-add" title="${t('Add a request to {name}', { name: esc(col.name) })}">+ request</button></div>`;
     g.querySelector('.col-fold').onclick = () => {
       const set = foldedCols();
       set.has(col.dir) ? set.delete(col.dir) : set.add(col.dir);
@@ -214,7 +218,7 @@ function renderSide() {
       continue;
     }
     if (!reqs.length) {
-      g.insertAdjacentHTML('beforeend', '<p class="group-empty">ว่าง — <button>เพิ่ม request แรก</button></p>');
+      g.insertAdjacentHTML('beforeend', t('<p class="group-empty">Empty — <button>add the first request</button></p>'));
       g.querySelector('.group-empty button').onclick = () => newRequest(col);
     }
     let folder = null;
@@ -223,7 +227,7 @@ function renderSide() {
       if (f && f !== folder) {
         const fh = document.createElement('div');
         fh.className = 'folder';
-        fh.innerHTML = `<span>${esc(f.replaceAll('/', ' / '))}</span><button class="icon-btn" title="แยกโฟลเดอร์นี้ออกเป็น collection ใหม่">แยก</button>`;
+        fh.innerHTML = `<span>${esc(f.replaceAll('/', ' / '))}</span><button class="icon-btn" title="${t('Split this folder into a new collection')}">${t('Split')}</button>`;
         fh.querySelector('button').onclick = () => splitFolder(col, f);
         g.append(fh);
       }
@@ -247,10 +251,10 @@ async function renderProjects() {
   state.root = p.current;
   state.projects = p;
   const list = p.projects.length ? p.projects : p.current ? [{ root: p.current, name: state.tree?.name ?? p.current }] : [];
-  if (!p.current) $('projectName').textContent = 'ยังไม่ได้เปิดโปรเจกต์';
+  if (!p.current) $('projectName').textContent = t('No project open');
   const item = (pr) => `<button role="menuitem" data-root="${esc(pr.root)}"${pr.root === p.current ? ' aria-current="true"' : ''}><span>${esc(pr.name)}</span><small>${esc(pr.root)}</small></button>`;
   $('projectMenu').innerHTML = list.map(item).join('') + (list.length ? '<hr>' : '') +
-    '<button role="menuitem" data-act="open"><span>เปิดโฟลเดอร์…</span></button><button role="menuitem" data-act="new"><span>สร้างโปรเจกต์ใหม่…</span></button><hr><button role="menuitem" data-act="about"><span>เกี่ยวกับ Hyperion</span></button>';
+    `<button role="menuitem" data-act="open"><span>${t('Open folder…')}</span></button><button role="menuitem" data-act="new"><span>${t('New project…')}</span></button><hr><button role="menuitem" data-act="settings"><span>${t('Settings')}</span></button><button role="menuitem" data-act="about"><span>${t('About Hyperion')}</span></button>`;
   $('recent').innerHTML = p.projects.map((pr) => `<li>${item(pr)}</li>`).join('');
 }
 
@@ -263,12 +267,24 @@ function toggleMenu(open = $('projectMenu').hidden) {
 async function showAbout() {
   toggleMenu(false);
   const a = await api('/api/about');
-  $('aboutVersion').textContent = `เวอร์ชัน ${a.version}`;
+  $('aboutVersion').textContent = t('Version {version}', { version: a.version });
   $('aboutDev').textContent = a.dev;
   $('aboutNode').textContent = `Node ${a.node.replace(/^v/, '')}`;
   $('aboutDlg').showModal();
   $('aboutClose').focus();
 }
+// Settings: UI language (the page reloads in the chosen language)
+async function showSettings() {
+  toggleMenu(false);
+  await askForm({
+    title: t('Settings'),
+    fields: [{ name: 'lang', label: t('Language'), type: 'seg', showLabel: true, value: lang, options: [{ value: 'en', label: 'English' }, { value: 'th', label: 'ไทย' }] }],
+    autosave: true, // one button: Close
+    onInput: (form) => { const l = form.elements.lang.value; if (l && l !== lang) setLang(l); },
+    onSubmit: () => true,
+  });
+}
+
 // closes from its own button / Esc / a click outside (the dialog's close event is not relied on)
 $('aboutClose').onclick = () => $('aboutDlg').close();
 $('aboutDlg').addEventListener('click', (e) => e.target === $('aboutDlg') && $('aboutDlg').close());
@@ -285,10 +301,10 @@ async function switchProject(root) {
 async function openFolder() {
   toggleMenu(false);
   const r = await askForm({
-    title: 'เปิดโฟลเดอร์โปรเจกต์',
-    desc: 'วาง path ของโฟลเดอร์ที่มี hyperion.yaml (เช่นโฟลเดอร์ใน repo ของโปรเจกต์)',
+    title: t('Open project folder'),
+    desc: t('Paste the path of a folder that contains hyperion.yaml (e.g. a folder in the project repo)'),
     fields: [{ name: 'root', label: 'Path', value: state.projects?.home ? state.projects.home + state.projects.sep : '', required: true }],
-    submit: 'เปิด',
+    submit: t('Open'),
     onSubmit: (v) => api('/api/project/open', v),
   });
   if (!r) return;
@@ -307,13 +323,13 @@ async function newProject() {
   for (let i = 2; taken.has(`${home}${sep}${folderName(name)}`.toLowerCase()); i++) name = `My API ${i}`;
   let folderEdited = false;
   const r = await askForm({
-    title: 'สร้างโปรเจกต์ใหม่',
-    desc: 'สร้าง hyperion.yaml, env dev / test / prod / training และ collection ตัวอย่าง — ไฟล์ที่มีอยู่แล้วจะไม่ถูกทับ',
+    title: t('New project'),
+    desc: t('Creates hyperion.yaml, envs dev / test / prod / training and a sample collection — existing files are never overwritten'),
     fields: [
-      { name: 'name', label: 'ชื่อโปรเจกต์', value: name, required: true },
-      { name: 'root', label: 'โฟลเดอร์', value: `${home}${sep}${folderName(name)}`, required: true },
+      { name: 'name', label: t('Project name'), value: name, required: true },
+      { name: 'root', label: t('Folder'), value: `${home}${sep}${folderName(name)}`, required: true },
     ],
-    submit: 'สร้างโปรเจกต์',
+    submit: t('Create project'),
     // the folder follows the name until it is edited by hand
     onInput: (form, e) => {
       if (e.target.name === 'root') folderEdited = true;
@@ -332,6 +348,7 @@ const onProjectClick = (e) => {
   if (b.dataset.root) switchProject(b.dataset.root);
   else if (b.dataset.act === 'open') openFolder();
   else if (b.dataset.act === 'new') newProject();
+  else if (b.dataset.act === 'settings') showSettings();
   else if (b.dataset.act === 'about') showAbout();
 };
 $('projectMenu').addEventListener('click', onProjectClick);
@@ -352,9 +369,9 @@ $('welcomeOpen').onclick = openFolder;
 
 // ---------- env editor ----------
 const kvRow = (k = '', v = '', focus = false) =>
-  `<div class="kv-row"><input class="k" value="${esc(k)}" placeholder="NAME" aria-label="ชื่อตัวแปร" autocomplete="off" spellcheck="false">` +
-  `<input class="v" value="${esc(v)}" placeholder="ค่า" aria-label="ค่า" autocomplete="off" spellcheck="false"${focus ? ' autofocus' : ''}>` +
-  `<button type="button" class="icon-btn kv-rm" title="ลบตัวแปรนี้">ลบ</button></div>`;
+  `<div class="kv-row"><input class="k" value="${esc(k)}" placeholder="NAME" aria-label="${t('Variable name')}" autocomplete="off" spellcheck="false">` +
+  `<input class="v" value="${esc(v)}" placeholder="${t('Value')}" aria-label="${t('Value')}" autocomplete="off" spellcheck="false"${focus ? ' autofocus' : ''}>` +
+  `<button type="button" class="icon-btn kv-rm" title="${t('Remove this variable')}">${t('Remove')}</button></div>`;
 
 $('formFields').addEventListener('click', (e) => {
   if (e.target.closest('.kv-rm')) {
@@ -373,13 +390,13 @@ async function editEnv(focus) {
   const vars = { ...e.variables };
   if (focus && !Object.hasOwn(vars, focus)) vars[focus] = '';
   const saved = await askForm({
-    title: `ตัวแปรของ ${e.title}`,
-    desc: `บันทึกลง ${e.file} · URL ใส่เต็ม เช่น https://dev-host/graphql · รหัสผ่านใส่เป็น {{secret:NAME}} แล้วเก็บค่าจริงใน secrets.local.yaml`,
+    title: t('Variables of {env}', { env: e.title }),
+    desc: t('Saved to {file} · enter the full URL, e.g. https://dev-host/graphql · enter passwords as {{secret:NAME}} and keep the real value in secrets.local.yaml', { file: e.file }),
     fields: [
       { name: 'variables', type: 'kv', value: vars, focus },
-      { name: 'protected', type: 'check', label: 'Protected — แสดงแถบเตือนสีแดงว่าเป็นข้อมูลจริง', value: e.protected },
+      { name: 'protected', type: 'check', label: t('Protected — show a red warning bar: this is real data'), value: e.protected },
     ],
-    submit: 'บันทึก env',
+    submit: t('Save env'),
     autosave: true,
     onSubmit: (v) => api('/api/env', { env: e.name, variables: v.variables, protected: v.protected }),
   });
@@ -389,12 +406,12 @@ async function editEnv(focus) {
 
 // ---------- collection settings: URL, auth, headers ----------
 const AUTH_TYPES = [
-  { value: 'none', label: 'ไม่มี' },
+  { value: 'none', label: t('None') },
   { value: 'bearer', label: 'Bearer' },
   { value: 'basic', label: 'Basic' },
   { value: 'apiKey', label: 'API Key' },
   { value: 'keycloak', label: 'Keycloak / OpenID' },
-  { value: 'tokenEndpoint', label: 'Login อื่น (JSON)' },
+  { value: 'tokenEndpoint', label: t('Other login (JSON)') },
 ];
 
 let deleteArmed = 0; // time of the first click on "ลบ collection นี้"
@@ -418,71 +435,71 @@ async function editCollection(col) {
     .join(' · ');
   const show = (...types) => ({ field: 'authType', in: types });
   const saved = await askForm({
-    title: `ตั้งค่า ${s.name}`,
-    desc: `ใช้กับทุก request ใน collection นี้ · Auth ที่เลือกเป็นของ env ${envTitle} เท่านั้น${otherEnvs ? ` (env อื่น: ${otherEnvs})` : ''}`,
+    title: t('Settings for {name}', { name: s.name }),
+    desc: t('Applies to every request in this collection · the selected Auth is for env {envTitle} only{other}', { envTitle, other: otherEnvs ? t(' (other envs: {list})', { list: otherEnvs }) : '' }),
     actions: {
       // current values of the same-named collection in Postman desktop; the dialog reopens to show them
       fromPostman: async () => {
         const r = await api('/api/collection/vars/postman', { dir: col.dir });
-        state.logs.push(`${new Date().toLocaleTimeString()}  ${s.name}: ดึง ${r.count} ตัวแปรจาก Postman${r.current ? ' (current value)' : ''}${r.secrets.length ? ` · ย้ายไป secrets.local.yaml: ${r.secrets.join(', ')}` : ''}`);
+        state.logs.push(t('{time}  {name}: pulled {count} variables from Postman{current}{secrets}', { time: new Date().toLocaleTimeString(), name: s.name, count: r.count, current: r.current ? ' (current value)' : '', secrets: r.secrets.length ? t(' · moved to secrets.local.yaml: {list}', { list: r.secrets.join(', ') }) : '' }));
         renderLog();
         return { close: true, value: 'reopen' };
       },
       applyAll: async (v) => {
         await save(v, 'all');
-        return { ok: true, text: 'ทุก env ใช้ auth นี้แล้ว' };
+        return { ok: true, text: t('Every env now uses this auth') };
       },
       // log in now with what is in the form (it was just saved) and say how long the token lasts
       testLogin: async () => {
         const r = await api('/api/token', { file: col.dir, env: state.env.name, action: 'login' });
         refreshToken().catch(() => {});
-        if (r.kind && r.kind !== 'tokenEndpoint') return { ok: false, text: 'collection นี้ยังไม่ได้ตั้งเป็น login' };
-        if (r.error) return { ok: false, text: r.error };
+        if (r.kind && r.kind !== 'tokenEndpoint') return { ok: false, text: t('This collection is not set up as a login yet') };
+        if (r.error) return { ok: false, text: tr(r.error) };
         const left = r.expiresAt ? Math.round((Date.parse(r.expiresAt) - Date.now()) / 60000) : null;
-        return { ok: true, text: `ได้ token แล้ว${left != null ? ` — ใช้ได้อีก ${left} นาที` : ''}${r.hasRefresh ? ' · มี refresh token (ต่ออายุเอง)' : ''}` };
+        return { ok: true, text: t('Got a token{valid}{refresh}', { valid: left != null ? t(' — valid for {left} more min', { left }) : '', refresh: r.hasRefresh ? t(' · has a refresh token (renews itself)') : '' }) };
       },
       // delete asks once more in place: the first click arms it, a second one within 6 s deletes
       deleteCol: async () => {
         const count = state.tree.requests.filter((r) => r.collectionDir === col.dir).length;
         if (!deleteArmed || Date.now() - deleteArmed > 6000) {
           deleteArmed = Date.now();
-          return { ok: false, text: `กดอีกครั้งเพื่อยืนยัน — ลบ ${s.name} และ ${count} request (ย้ายไป .hyperion/trash กู้คืนได้)` };
+          return { ok: false, text: t('Click again to confirm — deletes {name} and {count} requests (moved to .hyperion/trash, recoverable)', { name: s.name, count }) };
         }
         const r = await api('/api/collection/delete', { dir: col.dir });
-        state.logs.push(`${new Date().toLocaleTimeString()}  ลบ collection ${s.name} (${r.requests} request) → ${r.trash}${r.flowsUsing.length ? ` · flow ที่ใช้ request ในนี้: ${r.flowsUsing.join(', ')}` : ''}`);
+        state.logs.push(t('{time}  deleted collection {name} ({n} requests) → {trash}{flows}', { time: new Date().toLocaleTimeString(), name: s.name, n: r.requests, trash: r.trash, flows: r.flowsUsing.length ? t(' · flows using its requests: {list}', { list: r.flowsUsing.join(', ') }) : '' }));
         renderLog();
         if (state.req && state.req.file.startsWith(`${col.dir}/`)) state.req = null;
         return { close: true, value: 'deleted' };
       },
     },
     fields: [
-      { name: 'colName', label: 'ชื่อ collection', value: s.name, required: true },
-      { name: 'colType', label: 'ชนิด', type: 'seg', value: colType({ ...col, type: s.type }), options: COL_TYPES },
+      { name: 'colName', label: t('Collection name'), value: s.name, required: true },
+      { name: 'colType', label: t('Type'), type: 'seg', value: colType({ ...col, type: s.type }), options: COL_TYPES },
       { name: 'url', label: 'URL', value: s.url, placeholder: '{{GQL_URL}}' },
       { name: 'authType', label: 'Auth', type: 'seg', value: type, options: AUTH_TYPES },
-      { name: 'bearerToken', label: 'Token (ส่งเป็น Authorization: Bearer …)', value: bearer.token ?? '{{TOKEN}}', show: show('bearer') },
+      { name: 'bearerToken', label: t('Token (sent as Authorization: Bearer …)'), value: bearer.token ?? '{{TOKEN}}', show: show('bearer') },
       { name: 'basicUser', label: 'Username', value: basic.username ?? '{{APP_USER}}', show: show('basic') },
       { name: 'basicPass', label: 'Password', value: basic.password ?? '{{APP_PASSWORD}}', show: show('basic') },
-      { name: 'apiKeyIn', label: 'ส่งใน', type: 'select', value: apiKey.in ?? 'header', options: [{ value: 'header', label: 'Header' }, { value: 'query', label: 'Query string' }], show: show('apiKey') },
-      { name: 'apiKeyName', label: 'ชื่อ', value: apiKey.name ?? 'X-API-Key', show: show('apiKey') },
-      { name: 'apiKeyValue', label: 'ค่า', value: apiKey.value ?? '{{API_KEY}}', show: show('apiKey') },
-      { name: 'kcTokenUrl', label: `Token URL (ของ env ${envTitle})`, value: kc.tokenUrl, placeholder: 'https://keycloak-…/realms/<realm>/protocol/openid-connect/token', show: show('keycloak') },
+      { name: 'apiKeyIn', label: t('Send in'), type: 'select', value: apiKey.in ?? 'header', options: [{ value: 'header', label: 'Header' }, { value: 'query', label: 'Query string' }], show: show('apiKey') },
+      { name: 'apiKeyName', label: t('Name'), value: apiKey.name ?? 'X-API-Key', show: show('apiKey') },
+      { name: 'apiKeyValue', label: t('Value'), value: apiKey.value ?? '{{API_KEY}}', show: show('apiKey') },
+      { name: 'kcTokenUrl', label: t('Token URL (for env {envTitle})', { envTitle }), value: kc.tokenUrl, placeholder: 'https://keycloak-…/realms/<realm>/protocol/openid-connect/token', show: show('keycloak') },
       { name: 'kcClientId', label: 'Client ID', value: kc.clientId, show: show('keycloak') },
       { name: 'kcUsername', label: 'Username', value: kc.username, show: show('keycloak') },
-      { name: 'kcPassword', label: 'Password', type: 'password', value: '', placeholder: kc.hasPassword ? 'เก็บไว้แล้ว — เว้นว่างถ้าไม่เปลี่ยน' : 'เก็บใน secrets.local.yaml (ไม่เข้า Git)', show: show('keycloak') },
-      { name: 'kcClientSecret', label: 'Client secret (ถ้า client มี)', type: 'password', value: '', placeholder: kc.hasClientSecret ? 'เก็บไว้แล้ว — เว้นว่างถ้าไม่เปลี่ยน' : 'ไม่บังคับ', show: show('keycloak') },
-      { name: 'testLogin', label: 'ทดสอบ login', type: 'action', show: show('keycloak', 'tokenEndpoint') },
+      { name: 'kcPassword', label: 'Password', type: 'password', value: '', placeholder: kc.hasPassword ? t('Stored — leave empty to keep it') : t('Stored in secrets.local.yaml (not in Git)'), show: show('keycloak') },
+      { name: 'kcClientSecret', label: t('Client secret (if the client has one)'), type: 'password', value: '', placeholder: kc.hasClientSecret ? t('Stored — leave empty to keep it') : t('Optional'), show: show('keycloak') },
+      { name: 'testLogin', label: t('Test login'), type: 'action', show: show('keycloak', 'tokenEndpoint') },
       { name: 'loginUrl', label: 'Login URL', value: te.url ?? '{{AUTH_URL}}', show: show('tokenEndpoint') },
       { name: 'loginBody', label: 'Body (JSON)', type: 'textarea', rows: 3, value: JSON.stringify(te.body ?? { username: '{{APP_USER}}', password: '{{APP_PASSWORD}}' }, null, 2), show: show('tokenEndpoint') },
-      { name: 'tokenPath', label: 'Token อยู่ที่ field ไหนของ response', value: te.tokenPath ?? 'accessToken', show: show('tokenEndpoint') },
-      { name: 'refreshUrl', label: 'Refresh URL (ไม่บังคับ)', value: te.refresh?.url ?? '', placeholder: '{{AUTH_URL}}/refresh', show: show('tokenEndpoint') },
-      { name: 'applyAll', label: 'ใช้ auth นี้กับทุก env', type: 'action' },
-      { name: 'headers', label: 'Headers (ส่งทุก request)', type: 'kv', value: s.headers, addLabel: '+ Header' },
-      { name: 'variables', label: 'Variables ของ collection (ใช้เป็น {{ชื่อ}} — ค่าใน env ทับได้)', type: 'kv', value: s.variables, addLabel: '+ ตัวแปร' },
-      { name: 'fromPostman', label: 'ดึงค่าจาก Postman', type: 'action' },
-      { name: 'deleteCol', label: 'ลบ collection นี้', type: 'action', danger: true },
+      { name: 'tokenPath', label: t('Response field that holds the token'), value: te.tokenPath ?? 'accessToken', show: show('tokenEndpoint') },
+      { name: 'refreshUrl', label: t('Refresh URL (optional)'), value: te.refresh?.url ?? '', placeholder: '{{AUTH_URL}}/refresh', show: show('tokenEndpoint') },
+      { name: 'applyAll', label: t('Use this auth for every env'), type: 'action' },
+      { name: 'headers', label: t('Headers (sent with every request)'), type: 'kv', value: s.headers, addLabel: '+ Header' },
+      { name: 'variables', label: t('Collection variables (use as {{name}} — env values override them)'), type: 'kv', value: s.variables, addLabel: t('+ Variable') },
+      { name: 'fromPostman', label: t('Pull values from Postman'), type: 'action' },
+      { name: 'deleteCol', label: t('Delete this collection'), type: 'action', danger: true },
     ],
-    submit: 'บันทึก',
+    submit: t('Save'),
     autosave: true,
     onSubmit: (v) => save(v),
   });
@@ -507,7 +524,7 @@ async function editCollection(col) {
         try {
           body = JSON.parse(v.loginBody || '{}');
         } catch {
-          throw new Error('Body ของ Login ต้องเป็น JSON');
+          throw new Error(t('The Login body must be JSON'));
         }
         // keep settings this form does not show (saveToEnv, skewSeconds, ...)
         const next = { ...te, url: v.loginUrl, body, tokenPath: v.tokenPath || 'accessToken' };
@@ -547,14 +564,14 @@ async function saveUrl() {
       state.req.url = value;
     }
     if (!v) state.req.fixedHost = state.req.kind === 'HttpRequest' ? value.match(/^https?:\/\/[^/?#\s]+/i)?.[0] ?? null : null;
-    $('urlSrc').textContent = 'บันทึกแล้ว';
+    $('urlSrc').textContent = t('Saved');
     setTimeout(paintUrlSrc, 1500);
     // new URL: fetch its schema once typing has settled
     state.req.resolvedUrl = value;
     clearTimeout(urlSyncTimer);
     if (/^https?:\/\/[^<>{}\s]+$/.test(value)) urlSyncTimer = setTimeout(() => autoSyncSchema(true), 1500);
   } catch (err) {
-    $('urlSrc').textContent = `บันทึกไม่ได้: ${err.message}`;
+    $('urlSrc').textContent = t('Could not save: {error}', { error: err.message });
   }
 }
 
@@ -569,20 +586,20 @@ function paintUrlSrc() {
   if (!r) return;
   if (r.urlVar) src.textContent = `${r.urlVar.name} · ${envTitle}`;
   else if (r.fixedHost) {
-    src.textContent = 'host ตายตัว';
-    src.title = 'URL นี้เขียน host ไว้ในไฟล์ — เลือก dev / test / prod ก็ยิงไปที่เดิม · กด "ใช้ host ตาม env" เพื่อแยกตาม env';
+    src.textContent = t('fixed host');
+    src.title = t('This URL has the host written in the file — dev / test / prod all go to the same place · click "Use host per env" to split it per env');
     src.classList.add('warn');
   } else if (r.hostVar) {
     // this env's host, and prod's host beside it when another env is picked
     // short machine name: "prod-api:8080" (the full URL is in the tooltip)
     const host = (u) => u.replace(/^[a-z]+:\/\//i, '').replace(/^([^.:/]+)[^:/]*/, '$1').replace(/\/.*$/, '');
     const p = r.hostVar.prod;
-    const prodPart = p && !state.env.protected ? ` · ${p.env}: ${p.value ? host(p.value) : 'ยังไม่ได้ตั้ง'}` : '';
-    src.textContent = `${envTitle}: ${r.hostVar.value ? host(r.hostVar.value) : 'ยังไม่ได้ตั้ง'}${prodPart}`;
-    src.title = `${r.hostVar.name} = ${r.hostVar.value || '(ยังไม่ได้ตั้ง)'}${p && !state.env.protected ? `\n${p.env}: ${p.value || '(ยังไม่ได้ตั้ง)'}` : ''}\nคลิกเพื่อแก้ค่าใน env`;
+    const prodPart = p && !state.env.protected ? ` · ${p.env}: ${p.value ? host(p.value) : t('not set')}` : '';
+    src.textContent = `${envTitle}: ${r.hostVar.value ? host(r.hostVar.value) : t('not set')}${prodPart}`;
+    src.title = t('{name} = {value}{prod}\nClick to edit the value in env', { name: r.hostVar.name, value: r.hostVar.value || t('(not set)'), prod: p && !state.env.protected ? `\n${p.env}: ${p.value || t('(not set)')}` : '' });
     src.classList.add('link');
     if (!r.hostVar.value) src.classList.add('warn');
-  } else src.textContent = 'ใน request';
+  } else src.textContent = t('in the request');
 }
 $('urlSrc').onclick = () => state.req?.hostVar && !state.req.urlVar && editEnv(state.req.hostVar.name);
 
@@ -608,19 +625,19 @@ async function hostToVar() {
   const envTitle = state.env.title ?? state.env.name;
   const looksProd = /(^|[-.])prod/i.test(u.hostname) && !state.env.protected;
   const made = await askForm({
-    title: 'ใช้ host ตาม env',
-    desc: `URL ที่ขึ้นต้นด้วย host ที่ติ๊กจะกลายเป็น {{ชื่อตัวแปร}}/path แล้วแต่ละ env ใส่ host ของตัวเอง — env ที่เว้นว่างใส่ทีหลังได้ที่ แก้ env${looksProd ? ` · host นี้ดูเหมือนของ prod แต่ตอนนี้เลือก ${envTitle} อยู่ — ตรวจช่อง ${envTitle} ให้ถูก` : ''}`,
+    title: t('Use host per env'),
+    desc: t('URLs starting with a ticked host become {{variable}}/path and each env gets its own host — empty envs can be filled in later with Edit env{prod}', { prod: looksProd ? t(' · this host looks like prod, but {env} is selected — make sure the {env} box is right', { env: envTitle }) : '' }),
     fields: [
-      { name: 'name', label: 'ชื่อตัวแปร', value: suggested, required: true },
+      { name: 'name', label: t('Variable name'), value: suggested, required: true },
       ...same.map((h, i) => ({ name: `h${i}`, type: 'check', label: `${h.origin} (${h.count} request)`, value: true })),
       ...state.tree.envs.map((e) => ({
         name: `env_${e.name}`,
-        label: `host ของ ${e.title ?? e.name}${e.name === state.env.name ? ' (env ที่เลือกอยู่)' : ''}`,
+        label: t('host for {env}{sel}', { env: e.title ?? e.name, sel: e.name === state.env.name ? t(' (selected env)') : '' }),
         value: e.name === state.env.name ? host : '',
-        placeholder: 'http://…:8080 (เว้นว่างได้)',
+        placeholder: t('http://…:8080 (may be empty)'),
       })),
     ],
-    submit: 'เปลี่ยน',
+    submit: t('Change'),
     onSubmit: (v) =>
       api('/api/host/to-var', {
         name: v.name.trim(),
@@ -631,7 +648,7 @@ async function hostToVar() {
       }),
   });
   if (!made) return;
-  state.logs.push(`${new Date().toLocaleTimeString()}  host → {{${made.name}}} ใน ${made.changed} request`);
+  state.logs.push(t('{time}  host → {{{name}}} in {n} requests', { time: new Date().toLocaleTimeString(), name: made.name, n: made.changed }));
   renderLog();
   await loadTree(false);
   await openRequest(r.file);
@@ -651,7 +668,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
         return `<label>${esc(f.label)}<select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}"${o.value === f.value ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select></label>`;
       }
       if (f.type === 'seg') {
-        return `<div class="seg" role="radiogroup" aria-label="${esc(f.label)}">${f.options.map((o) => `<label><input type="radio" name="${f.name}" value="${esc(o.value)}"${o.value === f.value ? ' checked' : ''}>${esc(o.label)}</label>`).join('')}</div>`;
+        return `${f.showLabel ? `<div class="kv-label">${esc(f.label)}</div>` : ''}<div class="seg" role="radiogroup" aria-label="${esc(f.label)}">${f.options.map((o) => `<label><input type="radio" name="${f.name}" value="${esc(o.value)}"${o.value === f.value ? ' checked' : ''}>${esc(o.label)}</label>`).join('')}</div>`;
       }
       if (f.type === 'textarea') {
         return `<label>${esc(f.label)}<textarea name="${f.name}" rows="${f.rows ?? 4}" spellcheck="false">${esc(f.value ?? '')}</textarea></label>`;
@@ -661,7 +678,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
       }
       if (f.type === 'kv') {
         // editable NAME = value rows; collected into values[f.name] on submit
-        return `${f.label ? `<div class="kv-label">${esc(f.label)}</div>` : ''}<div class="kv-edit" data-name="${f.name}">${Object.entries(f.value ?? {}).map(([k, v]) => kvRow(k, v, k === f.focus)).join('')}<button type="button" class="ghost small kv-add">${esc(f.addLabel ?? '+ ตัวแปร')}</button></div>`;
+        return `${f.label ? `<div class="kv-label">${esc(f.label)}</div>` : ''}<div class="kv-edit" data-name="${f.name}">${Object.entries(f.value ?? {}).map(([k, v]) => kvRow(k, v, k === f.focus)).join('')}<button type="button" class="ghost small kv-add">${esc(f.addLabel ?? t('+ Variable'))}</button></div>`;
       }
       if (f.type === 'action') {
         // a button inside the form (e.g. "ทดสอบ login") with a line for its result
@@ -690,7 +707,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
   $('formOk').classList.toggle('primary', !danger);
   // autosave dialogs (env, collection settings): every edit is saved; the only button is "ปิด"
   $('formCancel').hidden = !!autosave;
-  if (autosave) $('formOk').textContent = 'ปิด';
+  if (autosave) $('formOk').textContent = t('Close');
   return new Promise((resolve) => {
     const form = $('formDlgForm');
     const collect = () => {
@@ -714,7 +731,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
       clearTimeout(timer);
       try {
         saved = await onSubmit(collect());
-        status(`บันทึกแล้ว ${new Date().toLocaleTimeString()}`);
+        status(t('Saved {time}', { time: new Date().toLocaleTimeString() }));
       } catch (err) {
         status(err.message, true);
       }
@@ -734,12 +751,12 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
       const out = form.querySelector(`[data-out="${btn.dataset.action}"]`);
       btn.disabled = true;
       out.className = 'action-out';
-      out.textContent = 'กำลังทำ…';
+      out.textContent = t('Working…');
       try {
         if (autosave) await autoSave();
         const r = await actions[btn.dataset.action](collect());
         if (r?.close) return done(r.value ?? null);
-        out.textContent = r?.text ?? 'สำเร็จ';
+        out.textContent = r?.text ?? t('Done');
         out.classList.add(r?.ok === false ? 'bad' : 'good');
       } catch (err) {
         out.textContent = err.message;
@@ -775,22 +792,22 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
 }
 
 const colOptions = (withNone) => [
-  ...(withNone ? [{ value: '', label: 'ไม่คัดลอก — เริ่มจากค่าว่าง' }] : []),
+  ...(withNone ? [{ value: '', label: t('Don\'t copy — start empty') }] : []),
   ...(state.tree.collections ?? []).map((c) => ({ value: c.dir, label: c.name })),
 ];
 
 async function newCollection() {
   const from = state.req ? state.tree.requests.find((r) => r.file === state.req.file)?.collectionDir : state.tree.collections?.[0]?.dir;
   const made = await askForm({
-    title: 'Collection ใหม่',
-    desc: 'คัดลอก auth, headers และแหล่ง schema จาก collection ที่มีอยู่ได้ ไม่ต้องตั้ง login ใหม่',
+    title: t('New collection'),
+    desc: t('Auth, headers and the schema source can be copied from an existing collection, so the login need not be set up again'),
     fields: [
-      { name: 'type', label: 'ชนิด', type: 'seg', value: 'graphql', options: COL_TYPES },
-      { name: 'name', label: 'ชื่อ', placeholder: 'เช่น Pharmacy API', required: true },
-      { name: 'from', label: 'คัดลอกการตั้งค่าจาก', type: 'select', options: colOptions(true), value: from ?? '' },
-      { name: 'url', label: 'URL', placeholder: 'เว้นว่าง = ใช้ของ collection ต้นแบบ หรือ {{GQL_URL}} / {{BASE_URL}}' },
+      { name: 'type', label: t('Type'), type: 'seg', value: 'graphql', options: COL_TYPES },
+      { name: 'name', label: t('Name'), placeholder: t('e.g. Pharmacy API'), required: true },
+      { name: 'from', label: t('Copy settings from'), type: 'select', options: colOptions(true), value: from ?? '' },
+      { name: 'url', label: 'URL', placeholder: t('Empty = the source collection\'s URL, or {{GQL_URL}} / {{BASE_URL}}') },
     ],
-    submit: 'สร้าง collection',
+    submit: t('Create collection'),
     onSubmit: (v) => api('/api/collection', { name: v.name, type: v.type, from: v.from || undefined, url: v.url || undefined }),
   });
   if (!made) return;
@@ -800,13 +817,13 @@ async function newCollection() {
 
 async function newRequest(col) {
   const made = await askForm({
-    title: `Request ใหม่ใน ${col.name}`,
+    title: t('New request in {name}', { name: col.name }),
     fields: [
-      { name: 'kind', label: 'ชนิด', type: 'seg', value: KINDS_OF[colType(col)][0][0], options: KINDS_OF[colType(col)].map(([value, label]) => ({ value, label })) },
-      { name: 'name', label: 'ชื่อ', placeholder: 'เช่น Get Lab Results', required: true },
-      { name: 'folder', label: 'โฟลเดอร์ (ไม่บังคับ)', placeholder: 'เช่น lab' },
+      { name: 'kind', label: t('Type'), type: 'seg', value: KINDS_OF[colType(col)][0][0], options: KINDS_OF[colType(col)].map(([value, label]) => ({ value, label })) },
+      { name: 'name', label: t('Name'), placeholder: t('e.g. Get Lab Results'), required: true },
+      { name: 'folder', label: t('Folder (optional)'), placeholder: t('e.g. lab') },
     ],
-    submit: 'สร้าง request',
+    submit: t('Create request'),
     onSubmit: (v) => api('/api/request/new', { collection: col.dir, ...v }),
   });
   if (!made) return;
@@ -820,13 +837,13 @@ async function moveCurrent() {
   const others = (state.tree.collections ?? []).filter((c) => c.dir !== current?.collectionDir);
   if (!others.length) return newCollection();
   const moved = await askForm({
-    title: `ย้าย "${state.req.name}"`,
-    desc: 'request จะใช้ URL, auth และ headers ของ collection ปลายทาง',
+    title: t('Move "{name}"', { name: state.req.name }),
+    desc: t('The request will use the URL, auth and headers of the target collection'),
     fields: [
-      { name: 'collection', label: 'ไปที่ collection', type: 'select', options: others.map((c) => ({ value: c.dir, label: c.name })) },
-      { name: 'folder', label: 'โฟลเดอร์ (ไม่บังคับ)', placeholder: 'เช่น lab' },
+      { name: 'collection', label: t('To collection'), type: 'select', options: others.map((c) => ({ value: c.dir, label: c.name })) },
+      { name: 'folder', label: t('Folder (optional)'), placeholder: t('e.g. lab') },
     ],
-    submit: 'ย้าย',
+    submit: t('Move'),
     onSubmit: (v) => api('/api/request/move', { file: state.req.file, ...v }),
   });
   if (!moved) return;
@@ -837,10 +854,10 @@ async function moveCurrent() {
 async function splitFolder(col, folder) {
   const count = state.tree.requests.filter((r) => r.file.startsWith(`${col.dir}/${folder}/`)).length;
   const made = await askForm({
-    title: `แยก "${folder}" เป็น collection ใหม่`,
-    desc: `ย้าย ${count} request ออกจาก ${col.name} — collection ใหม่ใช้ auth, headers และ schema แบบเดียวกับ ${col.name} แก้ทีหลังได้`,
-    fields: [{ name: 'name', label: 'ชื่อ collection ใหม่', value: `${col.name} ${folder.split('/').at(-1)}`, required: true }],
-    submit: 'แยก collection',
+    title: t('Split "{folder}" into a new collection', { folder }),
+    desc: t('Moves {count} requests out of {col} — the new collection uses the same auth, headers and schema as {col}; you can change them later', { count, col: col.name }),
+    fields: [{ name: 'name', label: t('New collection name'), value: `${col.name} ${folder.split('/').at(-1)}`, required: true }],
+    submit: t('Split collection'),
     onSubmit: (v) => api('/api/collection/split', { folder: `${col.dir}/${folder}`, name: v.name }),
   });
   if (!made) return;
@@ -878,8 +895,8 @@ async function openRequest(file) {
   const placeholderUrl = v && (!v.value || /<[^>]+>/.test(v.value)); // still the template's <dev-host>
   $('execUrl').disabled = false;
   $('execUrl').value = v ? (placeholderUrl ? '' : v.value) : r.url ?? '';
-  $('execUrl').placeholder = v ? `ใส่ URL ของ ${envTitle} เช่น https://dev-host/graphql` : 'https://…';
-  $('execUrl').title = v ? `ค่า ${v.name} ของ env ${envTitle} — แก้แล้วบันทึกให้เอง` : 'URL ของ request นี้ — แก้แล้วบันทึกให้เอง';
+  $('execUrl').placeholder = v ? t('Enter the {envTitle} URL, e.g. https://dev-host/graphql', { envTitle }) : 'https://…';
+  $('execUrl').title = v ? t('{name} value of env {envTitle} — saved automatically when edited', { name: v.name, envTitle }) : t('URL of this request — saved automatically when edited');
   paintUrlSrc();
   $('execUrl').classList.toggle('unset', !!placeholderUrl);
   $('query').value = r.kind === 'HttpRequest' ? JSON.stringify(r.body ?? null, null, 2) : RT[r.kind] ? r.rt?.message ?? '' : r.query;
@@ -888,7 +905,7 @@ async function openRequest(file) {
   paintQuery();
   paintVars();
   $('send').disabled = false;
-  $('save').textContent = 'บันทึกอัตโนมัติ';
+  $('save').textContent = t('Autosave');
   $('move').disabled = false;
   $('delReq').disabled = false;
   disarmDelete();
@@ -899,7 +916,7 @@ async function openRequest(file) {
     ['beforeRequest', 'afterResponse']
       .filter((k) => s[k])
       .map((k) => `<h4>${k}</h4><pre>${esc(s[k])}</pre>`)
-      .join('') || '<p class="hint">request นี้ไม่มี script — เขียนได้ในไฟล์ .req.yaml ส่วน scripts:</p>';
+      .join('') || t('<p class="hint">This request has no scripts — write them in the .req.yaml file under scripts:</p>');
   fillAuth(r.auth, r.inheritedAuth);
   fillHeaders(r.headers, r.inheritedHeaders);
   r.authKey = JSON.stringify([readAuth(), readHeaders()]); // to notice a token change later
@@ -911,36 +928,36 @@ async function openRequest(file) {
 
 async function refreshSchema() {
   if (!state.req || !isGql()) {
-    $('schemaStatus').textContent = isRt() ? `${RT[state.req.kind]} — ไม่ใช้ GraphQL schema` : 'REST request — ไม่ใช้ schema';
+    $('schemaStatus').textContent = isRt() ? t('{kind} — no GraphQL schema', { kind: RT[state.req.kind] }) : t('REST request — no schema');
     return;
   }
   const { meta } = await api(`/api/schema?file=${encodeURIComponent(state.req.file)}&env=${encodeURIComponent(state.env.name)}`);
   state.schema = meta;
-  const label = { fallback: 'SCHEMA_URL', target: `${state.env.name} เอง`, snapshot: 'Offline snapshot' };
+  const label = { fallback: 'SCHEMA_URL', target: t('{env} itself', { env: state.env.name }), snapshot: 'Offline snapshot' };
   $('schemaStatus').innerHTML = meta
-    ? `<b>${esc(label[meta.source] ?? `env ${meta.source}`)}</b>${meta.borrowed ? ' (ยืม cache)' : ''} · ${meta.types ?? '?'} types${meta.fetchedAt ? ` · ดึงล่าสุด ${ago(meta.fetchedAt)}` : ''}${meta.hash ? ` · sha ${esc(meta.hash)}` : ''}${meta.stale ? ' · <span class="drift">cache หมดอายุ</span>' : ''}${
+    ? `<b>${esc(label[meta.source] ?? `env ${meta.source}`)}</b>${meta.borrowed ? t(' (borrowed cache)') : ''} · ${meta.types ?? '?'} types${meta.fetchedAt ? t(' · fetched {ago}', { ago: ago(meta.fetchedAt) }) : ''}${meta.hash ? ` · sha ${esc(meta.hash)}` : ''}${meta.stale ? t(' · <span class="drift">cache expired</span>') : ''}${
         meta.targetRejected && /40[13]/.test(meta.targetRejected)
-          ? ` · <span class="drift">${esc(state.env.name)} ตอบ ${esc(meta.targetRejected)} — ใส่ token ในแท็บ Authorization แล้วจะโหลด schema ของ ${esc(state.env.name)} เอง</span>`
+          ? t(' · <span class="drift">{env} answered {code} — put a token in the Authorization tab and the {env} schema loads by itself</span>', { env: esc(state.env.name), code: esc(meta.targetRejected) })
           : ''
       }`
-    : /<[^>]+>|\{\{/.test(state.req.resolvedUrl ?? '<') ? 'ยังไม่มี schema — ใส่ URL ในช่องด้านบน แล้ว schema จะโหลดเอง' : 'ยังไม่มี schema';
+    : /<[^>]+>|\{\{/.test(state.req.resolvedUrl ?? '<') ? t('No schema yet — enter a URL in the box above and the schema loads by itself') : t('No schema yet');
 }
 
 async function refreshToken() {
-  const t = await api(`/api/token?file=${encodeURIComponent(state.req.file)}&env=${encodeURIComponent(state.env.name)}`);
+  const tok = await api(`/api/token?file=${encodeURIComponent(state.req.file)}&env=${encodeURIComponent(state.env.name)}`);
   const box = $('token');
-  box.hidden = t.kind !== 'tokenEndpoint';
+  box.hidden = tok.kind !== 'tokenEndpoint';
   if (box.hidden) return;
   box.classList.remove('warn', 'bad');
-  if (!t.hasToken) {
-    $('tokenText').textContent = 'ยังไม่มี token — จะ login ให้ตอนกด Send';
+  if (!tok.hasToken) {
+    $('tokenText').textContent = t('No token yet — will log in when you press Send');
     box.classList.add('warn');
-  } else if (t.expiresAt) {
-    const left = Math.round((Date.parse(t.expiresAt) - Date.now()) / 60000);
-    $('tokenText').textContent = left > 0 ? `token เหลือ ${left} นาที` : `token หมดอายุ — จะ${t.hasRefresh ? 'ต่ออายุ' : ' login ใหม่'}อัตโนมัติตอนยิง`;
+  } else if (tok.expiresAt) {
+    const left = Math.round((Date.parse(tok.expiresAt) - Date.now()) / 60000);
+    $('tokenText').textContent = left > 0 ? t('token: {left} min left', { left }) : (tok.hasRefresh ? t('token expired — will renew automatically when sending') : t('token expired — will log in again automatically when sending'));
     if (left <= 0) box.classList.add('warn');
-  } else $('tokenText').textContent = 'มี token (ไม่ทราบเวลาหมดอายุ)';
-  $('tokenText').title = `เก็บใน ${state.env.name}.local.env.yaml → ${t.varName}`;
+  } else $('tokenText').textContent = t('Has a token (expiry unknown)');
+  $('tokenText').title = t('Stored in {env}.local.env.yaml → {var}', { env: state.env.name, var: tok.varName });
 }
 
 // ---------- validation ----------
@@ -959,7 +976,7 @@ async function validate() {
   try {
     JSON.parse($('vars').value || '{}');
   } catch (e) {
-    notes.push(`Variables ไม่ใช่ JSON ที่ถูกต้อง: ${e.message}`);
+    notes.push(t('Variables is not valid JSON: {error}', { error: e.message }));
   }
   if (isGql()) {
     const { errors } = await api('/api/validate', { file: state.req.file, env: state.env.name, query: $('query').value });
@@ -994,7 +1011,7 @@ async function openAc(force = false) {
   ac.index = 0;
   ac.prefix = res.prefix;
   const list = $('ac');
-  const src = state.schema ? `${res.type} · จาก ${state.schema.source === 'fallback' ? 'Dev' : state.schema.source}` : res.type;
+  const src = state.schema ? t('{type} · from {src}', { type: res.type, src: state.schema.source === 'fallback' ? 'Dev' : state.schema.source }) : res.type;
   list.innerHTML = `<li class="ac-src">${esc(src)}</li>` + res.items
     .map((it, i) => `<li role="option" data-i="${i}" class="${it.deprecated ? 'deprecated' : ''}" aria-selected="${i === 0}" title="${esc(it.doc || it.args.join(', '))}"><span>${esc(it.label)}</span><small>${esc(it.detail)}</small></li>`)
     .join('');
@@ -1102,7 +1119,7 @@ async function loadProto(reload = false) {
   const proto = $('rtProto').value.trim();
   protoInfo = [];
   if (!proto) {
-    $('rtHint').textContent = 'ใส่ path ของไฟล์ .proto แล้วเลือก method';
+    $('rtHint').textContent = t('Enter the .proto file path, then pick a method');
     return;
   }
   try {
@@ -1115,7 +1132,7 @@ async function loadProto(reload = false) {
       .map(([v, tag]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(v)}${esc(tag)}</option>`)
       .join('');
     if (!cur && $('rtMethod').value) scheduleSave();
-    $('rtHint').textContent = `${services.reduce((n, s) => n + s.methods.length, 0)} method ใน ${proto.split(/[\\/]/).at(-1)}`;
+    $('rtHint').textContent = t('{n} methods in {file}', { n: services.reduce((n, s) => n + s.methods.length, 0), file: proto.split(/[\\/]/).at(-1) });
   } catch (err) {
     $('rtHint').textContent = err.message;
   }
@@ -1141,7 +1158,7 @@ async function rtSend() {
     if (r.result) {
       // gRPC unary / client-streaming: one answer
       const res = r.result;
-      state.rt[file] = { kind: state.req.kind, status: 'done', result: res, log: [{ t: Date.now(), dir: res.ok ? 'in' : 'sys', data: res.ok ? res.response : `${res.status}: ${res.error}`, error: !res.ok }] };
+      state.rt[file] = { kind: state.req.kind, status: 'done', result: res, log: [{ t: Date.now(), dir: res.ok ? 'in' : 'sys', data: res.ok ? res.response : `${res.status}: ${tr(res.error)}`, error: !res.ok }] };
     } else rtFollow(file, r.id, state.req.kind, r.streaming);
   } catch (err) {
     state.rt[file] = { kind: state.req.kind, status: 'closed', log: [...(c?.log ?? []), { t: Date.now(), dir: 'sys', data: err.message, error: true }] };
@@ -1168,7 +1185,7 @@ function rtFollow(file, id, kind, streaming) {
     c.es.close();
     if (c.status !== 'closed') {
       c.status = 'closed';
-      c.log.push({ t: Date.now(), dir: 'sys', data: 'หลุดจาก Hyperion — กด Connect ใหม่', error: true });
+      c.log.push({ t: Date.now(), dir: 'sys', data: t('Lost the connection to Hyperion — press Connect again'), error: true });
     }
     if (state.req?.file === file) rtPaint();
   };
@@ -1180,7 +1197,7 @@ $('rtClose').onclick = async () => {
   await api('/api/rt/close', { id: c.id }).catch(() => {});
   if (c.status !== 'closed') {
     c.status = 'closed';
-    c.log.push({ t: Date.now(), dir: 'sys', data: 'ปิดการเชื่อมต่อแล้ว' });
+    c.log.push({ t: Date.now(), dir: 'sys', data: t('Disconnected') });
   }
   c.es?.close();
   rtPaint();
@@ -1189,6 +1206,7 @@ $('rtClose').onclick = async () => {
 function rtLine(e) {
   const shown = (v) => ($('unmask').checked ? v : mask(v, state.req?.maskFields ?? DEFAULT_MASK));
   let body;
+  if (e.dir === 'sys' && typeof e.data === 'string') e = { ...e, data: tr(e.data) };
   if (typeof e.data === 'string') {
     try {
       const v = JSON.parse(e.data);
@@ -1198,7 +1216,7 @@ function rtLine(e) {
     }
   } else body = hlJSON(JSON.stringify(shown(e.data), null, 2));
   const arrow = { in: '↓', out: '↑' }[e.dir] ?? '·';
-  return `<li class="rt-${e.dir}${e.error ? ' err' : ''}"><span class="rt-dir" title="${e.dir === 'in' ? 'รับ' : e.dir === 'out' ? 'ส่ง' : 'สถานะ'}">${arrow}</span><time>${new Date(e.t).toLocaleTimeString()}</time>${e.event ? `<b class="rt-ev">${esc(e.event)}</b>` : ''}<pre>${body}</pre></li>`;
+  return `<li class="rt-${e.dir}${e.error ? ' err' : ''}"><span class="rt-dir" title="${e.dir === 'in' ? t('Received') : e.dir === 'out' ? t('Sent') : t('Status')}">${arrow}</span><time>${new Date(e.t).toLocaleTimeString()}</time>${e.event ? `<b class="rt-ev">${esc(e.event)}</b>` : ''}<pre>${body}</pre></li>`;
 }
 
 function rtPaint() {
@@ -1209,20 +1227,20 @@ function rtPaint() {
   $('send').innerHTML = `${open && c.canSend ? 'Send' : grpc ? 'Invoke' : 'Connect'} <kbd>Ctrl+Enter</kbd>`;
   $('send').disabled = !!open && !c.canSend; // a server stream is running: nothing to send
   $('rtClose').hidden = !open;
-  $('rtClose').textContent = grpc ? 'หยุด stream' : 'Disconnect';
+  $('rtClose').textContent = grpc ? t('Stop stream') : 'Disconnect';
   const [cls, text] = !c
-    ? ['', grpc ? 'ยังไม่ได้เรียก' : 'ยังไม่ได้เชื่อมต่อ']
+    ? ['', grpc ? t('Not invoked yet') : t('Not connected')]
     : c.result
       ? [c.result.ok ? 'ok' : 'err', c.result.status]
       : c.status === 'open'
-        ? ['ok', grpc ? 'streaming' : 'เชื่อมต่ออยู่']
+        ? ['ok', grpc ? 'streaming' : t('Connected')]
         : c.status === 'connecting'
-          ? ['', 'กำลังเชื่อมต่อ…']
-          : [c.log.some((e) => e.error) ? 'err' : '', 'ปิดแล้ว'];
+          ? ['', t('Connecting…')]
+          : [c.log.some((e) => e.error) ? 'err' : '', t('Closed')];
   $('status').className = `status ${cls}`;
   $('status').textContent = text;
-  $('resMeta').textContent = c?.result ? `${c.result.timeMs} ms` : c ? `${c.log.filter((e) => e.dir !== 'sys').length} ข้อความ` : '';
-  const empty = grpc ? 'กด Invoke เพื่อเรียก method — stream จะแสดงทีละข้อความ' : 'กด Connect เพื่อเชื่อมต่อ แล้วกด Send เพื่อส่งข้อความในช่องด้านบน';
+  $('resMeta').textContent = c?.result ? `${c.result.timeMs} ms` : c ? t('{n} messages', { n: c.log.filter((e) => e.dir !== 'sys').length }) : '';
+  const empty = grpc ? t('Press Invoke to call the method — the stream shows one message at a time') : t('Press Connect to connect, then Send to send the message in the box above');
   $('tab-body').innerHTML = c ? `<ol class="rt-log">${c.log.map(rtLine).join('')}</ol>` : `<div class="empty">${empty}</div>`;
   $('tab-body').scrollTop = $('tab-body').scrollHeight;
 }
@@ -1232,7 +1250,7 @@ $('rtBar').addEventListener('change', scheduleSave);
 $('rtProto').addEventListener('change', () => loadProto(true));
 $('rtExample').onclick = () => {
   const m = protoMethod();
-  if (!m) return ($('rtHint').textContent = 'เลือก method ก่อน');
+  if (!m) return ($('rtHint').textContent = t('Pick a method first'));
   $('query').value = `${JSON.stringify(m.requestStream ? [m.example] : m.example, null, 2)}\n`;
   $('query').dispatchEvent(new Event('input'));
 };
@@ -1260,10 +1278,10 @@ async function send() {
   // a GraphQL mutation sent to prod (protected env) asks first: ตกลง / ยกเลิก. Other envs, queries and REST go straight out
   if (state.env.protected && state.req.kind !== 'HttpRequest' && op.type === 'mutation') {
     const ok = await askForm({
-      title: `ยิง mutation ${op.name}?`,
-      desc: `ไปที่ ${state.env.title ?? state.env.name} — ข้อมูลจริง · mutation จะเปลี่ยนข้อมูลในระบบ`,
+      title: t('Send mutation {name}?', { name: op.name }),
+      desc: t('To {env} — real data · the mutation changes data in the system', { env: state.env.title ?? state.env.name }),
       fields: [],
-      submit: 'ตกลง',
+      submit: t('OK'),
       danger: true,
       onSubmit: async () => true,
     });
@@ -1290,29 +1308,29 @@ function renderResult() {
   const r = state.result;
   const ok = r.status != null && r.status < 400 && !r.error && !r.response?.json?.errors?.length;
   $('status').className = `status ${r.status == null ? 'err' : ok ? 'ok' : 'err'}`;
-  $('status').textContent = r.blocked ? 'ถูกบล็อก' : r.status ?? 'ล้มเหลว';
+  $('status').textContent = r.blocked ? t('Blocked') : r.status ?? t('Failed');
   $('resMeta').textContent = [r.timeMs != null && `${r.timeMs} ms`, kb(r.size)].filter(Boolean).join(' · ');
 
   const banners = [];
-  if (r.error) banners.push(`<div class="banner err">${esc(r.error)}</div>`);
-  for (const w of r.warnings ?? []) banners.push(`<div class="banner warn">${esc(w)}</div>`);
+  if (r.error) banners.push(`<div class="banner err">${esc(tr(r.error))}</div>`);
+  for (const w of r.warnings ?? []) banners.push(`<div class="banner warn">${esc(tr(w))}</div>`);
   const resp = r.response;
   let bodyHtml = '';
   if (resp?.json !== undefined) {
     const shown = $('unmask').checked ? resp.json : mask(resp.json, state.view === 'flow' ? DEFAULT_MASK : state.req?.maskFields ?? DEFAULT_MASK);
     bodyHtml = `<pre>${hlJSON(JSON.stringify(shown, null, 2))}</pre>`;
   } else if (resp?.text) bodyHtml = `<pre>${esc(resp.text)}</pre>`;
-  $('tab-body').innerHTML = banners.join('') + (bodyHtml || (banners.length ? '' : '<div class="empty">ไม่มี body</div>'));
+  $('tab-body').innerHTML = banners.join('') + (bodyHtml || (banners.length ? '' : t('<div class="empty">No body</div>')));
 
   const tests = r.tests ?? [];
   const failed = tests.filter((t) => !t.pass).length;
   $('testCount').textContent = tests.length ? `${tests.length - failed}/${tests.length}` : '';
   $('testCount').className = failed ? 'fail' : '';
   $('tab-tests').innerHTML = tests.length
-    ? `<ul class="tests">${tests.map((t) => `<li class="${t.pass ? 'pass' : 'fail'}">${esc(t.name)}${t.error ? `<small>${esc(t.error)}</small>` : ''}</li>`).join('')}</ul>`
-    : '<div class="empty">request นี้ไม่มี test — เขียน $test(...) ใน afterResponse</div>';
+    ? `<ul class="tests">${tests.map((t) => `<li class="${t.pass ? 'pass' : 'fail'}">${esc(t.name)}${t.error ? `<small>${esc(tr(t.error))}</small>` : ''}</li>`).join('')}</ul>`
+    : t('<div class="empty">This request has no tests — write $test(...) in afterResponse</div>');
 
-  state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${l}`));
+  state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
   renderLog();
   $('tab-headers').innerHTML = resp?.headers
     ? `<table class="kv">${Object.entries(resp.headers).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>`
@@ -1326,7 +1344,7 @@ function renderLog() {
   $('logCount').textContent = state.logs.length || '';
   $('tab-log').innerHTML = state.logs.length
     ? `<ul class="log">${state.logs.slice(-200).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
-    : '<div class="empty">ยังไม่มี log — การ login / ต่ออายุ token / sync schema จะแสดงที่นี่</div>';
+    : t('<div class="empty">No log yet — login / token renewal / schema sync show up here</div>');
 }
 
 function selectTab(name) {
@@ -1342,7 +1360,7 @@ function selectReqTab(name) {
 }
 for (const b of document.querySelectorAll('[data-rtab]')) b.onclick = () => selectReqTab(b.dataset.rtab);
 
-const AUTH_LABEL = { none: 'ไม่มี', bearer: 'Bearer Token', basic: 'Basic Auth', apiKey: 'API Key', tokenEndpoint: 'Login (ต่ออายุอัตโนมัติ)' };
+const AUTH_LABEL = { none: t('None'), bearer: 'Bearer Token', basic: 'Basic Auth', apiKey: 'API Key', tokenEndpoint: t('Login (auto-renew)') };
 
 function showAuthFields() {
   const t = $('authType').value;
@@ -1356,7 +1374,7 @@ function fillAuth(auth, inherited) {
   // a kind this tab cannot edit (e.g. a request-level login) stays exactly as it is in the file
   $('authType').querySelector('option[value=keep]')?.remove();
   if (!['inherit', 'none', 'bearer', 'basic', 'apiKey'].includes(a.type)) {
-    $('authType').insertAdjacentHTML('beforeend', `<option value="keep">${esc(AUTH_LABEL[a.type] ?? a.type)} (ตั้งในไฟล์)</option>`);
+    $('authType').insertAdjacentHTML('beforeend', t('<option value="keep">{label} (set in file)</option>', { label: esc(AUTH_LABEL[a.type] ?? a.type) }));
   }
   $('authType').value = $('authType').querySelector(`option[value="${a.type}"]`) ? a.type : 'keep';
   $('bearerToken').value = a.bearer?.token ?? a.token ?? '';
@@ -1365,7 +1383,7 @@ function fillAuth(auth, inherited) {
   $('apiKeyName').value = a.apiKey?.name ?? '';
   $('apiKeyValue').value = a.apiKey?.value ?? '';
   $('apiKeyIn').value = a.apiKey?.in ?? 'header';
-  $('authInherit').textContent = `ใช้ auth ของ collection: ${AUTH_LABEL[inherited] ?? inherited} — แก้ได้ที่ปุ่ม ตั้งค่า ของ collection`;
+  $('authInherit').textContent = t('Uses the collection auth: {label} — change it with the collection Settings button', { label: AUTH_LABEL[inherited] ?? inherited });
   showAuthFields();
   showBearerHint();
 }
@@ -1385,7 +1403,7 @@ function fillHeaders(headers, inherited) {
   box.querySelector('.kv-add').insertAdjacentHTML('beforebegin', Object.entries(headers ?? {}).map(([k, v]) => kvRow(k, v)).join(''));
   const inh = Object.entries(inherited ?? {});
   $('inheritedHeaders').innerHTML = inh.length
-    ? `<p class="hint">ส่งด้วยจาก collection (header ชื่อเดียวกันข้างบนจะทับ)</p>${inh.map(([k, v]) => `<div class="kv-row inherited"><input class="k" value="${esc(k)}" disabled><input class="v" value="${esc(v)}" disabled><span></span></div>`).join('')}`
+    ? `<p class="hint">${t('Also sent, from the collection (a header above with the same name overrides it)')}</p>${inh.map(([k, v]) => `<div class="kv-row inherited"><input class="k" value="${esc(k)}" disabled><input class="v" value="${esc(v)}" disabled><span></span></div>`).join('')}`
     : '';
   $('headersDot').hidden = !Object.keys(headers ?? {}).length;
 }
@@ -1406,15 +1424,15 @@ async function stashToken(input, after) {
   if (!looksLikeToken(raw)) return false;
   const r = await api('/api/env/local', { env: state.env.name, name: 'BEARER_TOKEN', value: raw });
   input.value = '{{BEARER_TOKEN}}';
-  after?.(`เก็บ token ของ ${state.env.title ?? state.env.name} ไว้ใน ${r.file} แล้ว (ไม่เข้า Git) · วาง token ใหม่ทับได้เลย`);
+  after?.(t('Stored the {env} token in {file} (not in Git) · paste a new token to replace it', { env: state.env.title ?? state.env.name, file: r.file }));
   return true;
 }
 async function showBearerHint() {
   if ($('bearerToken').value.trim() !== '{{BEARER_TOKEN}}' || !state.env) return;
   const r = await api(`/api/env/local?env=${encodeURIComponent(state.env.name)}&name=BEARER_TOKEN`).catch(() => null);
   $('bearerHint').textContent = r?.has
-    ? `token ของ ${state.env.title ?? state.env.name}: ${r.preview} (เก็บใน envs/${state.env.name}.local.env.yaml) · วาง token ใหม่เพื่อเปลี่ยน`
-    : `env ${state.env.title ?? state.env.name} ยังไม่มี token — วาง token ที่ช่องนี้`;
+    ? t('{env} token: {preview} (stored in envs/{name}.local.env.yaml) · paste a new token to change it', { env: state.env.title ?? state.env.name, preview: r.preview, name: state.env.name })
+    : t('env {env} has no token yet — paste a token in this box', { env: state.env.title ?? state.env.name });
 }
 let tokenTimer;
 $('bearerToken').addEventListener('focus', () => $('bearerToken').select());
@@ -1427,7 +1445,7 @@ $('bearerToken').addEventListener('input', () => {
         refreshToken().catch(() => {});
       }
     } catch (err) {
-      $('bearerHint').textContent = `เก็บ token ไม่ได้: ${err.message}`;
+      $('bearerHint').textContent = t('Could not store the token: {error}', { error: err.message });
     }
   }, 300);
 });
@@ -1449,7 +1467,7 @@ let saveTimer;
 function scheduleSave() {
   if (!state.req || state.view === 'flow') return;
   clearTimeout(saveTimer);
-  $('save').textContent = 'ยังไม่บันทึก…';
+  $('save').textContent = t('Not saved yet…');
   saveTimer = setTimeout(saveNow, 800);
 }
 async function saveNow() {
@@ -1459,18 +1477,18 @@ async function saveNow() {
   try {
     variables = JSON.parse($('vars').value || '{}');
   } catch {
-    $('save').textContent = 'Variables ไม่ใช่ JSON — ยังไม่บันทึก';
+    $('save').textContent = t('Variables is not JSON — not saved');
     return validate();
   }
   try {
     await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() ? undefined : variables, rt: isRt() ? readRt() : undefined, auth: readAuth(), headers: readHeaders() });
-    $('save').textContent = `บันทึกแล้ว ${new Date().toLocaleTimeString()}`;
+    $('save').textContent = t('Saved {time}', { time: new Date().toLocaleTimeString() });
     // token or headers changed while the schema is not this env's own: try this env's schema again
     const authKey = JSON.stringify([readAuth(), readHeaders()]);
     if (state.req.authKey !== undefined && authKey !== state.req.authKey && state.schema?.source !== 'target') autoSyncSchema(true);
     state.req.authKey = authKey;
   } catch (err) {
-    $('save').textContent = `บันทึกไม่ได้: ${err.message}`;
+    $('save').textContent = t('Could not save: {error}', { error: err.message });
   }
 }
 $('query').addEventListener('input', scheduleSave);
@@ -1496,16 +1514,16 @@ async function autoSyncSchema(force = false) {
   schemaTried.add(key);
   const b = $('sync');
   b.disabled = true;
-  b.textContent = 'กำลังโหลด schema…';
+  b.textContent = t('Loading schema…');
   syncing = (async () => {
     try {
       // the Authorization / Headers tabs as they are now (a token typed there is used to read the schema too)
       const r = await api('/api/schema/sync', { file: state.req.file, env: state.env.name, auth: readAuth(), headers: readHeaders() });
-      state.logs.push(...r.logs.map((l) => `${new Date().toLocaleTimeString()}  ${l}`));
-      if (r.error) state.logs.push(`schema: ${r.error}`);
+      state.logs.push(...r.logs.map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
+      if (r.error) state.logs.push(`schema: ${tr(r.error)}`);
       renderLog();
       await refreshSchema();
-      if (r.error && !state.schema) $('schemaStatus').innerHTML += ` <span class="drift">— โหลดไม่ได้ ดูแท็บ Log</span>`;
+      if (r.error && !state.schema) $('schemaStatus').innerHTML += t(' <span class="drift">— could not load, see the Log tab</span>');
       await resetExplorer();
       validateSoon();
     } catch (err) {
@@ -1513,7 +1531,7 @@ async function autoSyncSchema(force = false) {
       renderLog();
     } finally {
       b.disabled = false;
-      b.textContent = 'sync ใหม่';
+      b.textContent = t('Sync now');
       syncing = null;
     }
   })();
@@ -1522,8 +1540,8 @@ async function autoSyncSchema(force = false) {
 $('sync').onclick = () => autoSyncSchema(true);
 const tokenAction = (action) => async () => {
   const r = await api('/api/token', { file: state.req.file, env: state.env.name, action });
-  state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${l}`));
-  if (r.error) state.logs.push(`✘ ${r.error}`);
+  state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
+  if (r.error) state.logs.push(`✘ ${tr(r.error)}`);
   renderLog();
   if (r.error) selectTab('log');
   refreshToken();
@@ -1535,7 +1553,7 @@ $('newColBtn').onclick = newCollection;
 $('move').onclick = moveCurrent;
 
 // rename: click the request name in the header, type, Enter (Esc cancels); the file name stays the same
-$('reqName').title = 'คลิกเพื่อเปลี่ยนชื่อ';
+$('reqName').title = t('Click to rename');
 $('reqName').onclick = () => {
   const h = $('reqName');
   if (!state.req || h.isContentEditable) return;
@@ -1564,13 +1582,13 @@ $('reqName').onblur = async () => {
   try {
     await api('/api/save', { file: state.req.file, name });
     state.req.name = name;
-    const t = state.tree.requests.find((r) => r.file === state.req.file);
-    if (t) t.name = name;
+    const entry = state.tree.requests.find((r) => r.file === state.req.file);
+    if (entry) entry.name = name;
     renderSide();
-    $('save').textContent = `เปลี่ยนชื่อแล้ว ${new Date().toLocaleTimeString()}`;
+    $('save').textContent = t('Renamed {time}', { time: new Date().toLocaleTimeString() });
   } catch (err) {
     h.textContent = state.req.name;
-    $('save').textContent = `เปลี่ยนชื่อไม่ได้: ${err.message}`;
+    $('save').textContent = t('Could not rename: {error}', { error: err.message });
   }
 };
 
@@ -1580,13 +1598,13 @@ let delTimer;
 const disarmDelete = () => {
   delArmed = 0;
   clearTimeout(delTimer);
-  $('delReq').textContent = 'ลบ';
+  $('delReq').textContent = t('Delete');
 };
 $('delReq').onclick = async () => {
   if (!state.req) return;
   if (!delArmed) {
     delArmed = Date.now();
-    $('delReq').textContent = 'กดอีกครั้งเพื่อลบ';
+    $('delReq').textContent = t('Click again to delete');
     delTimer = setTimeout(disarmDelete, 6000);
     return;
   }
@@ -1604,7 +1622,7 @@ $('delReq').onclick = async () => {
   const next = same.find((r) => list.indexOf(r) > i) ?? same.at(-1) ?? list.find((r) => r.file !== file);
   try {
     const r = await api('/api/request/delete', { file });
-    state.logs.push(`${new Date().toLocaleTimeString()}  ลบ ${state.req.name} → ${r.trash}${r.flowsUsing.length ? ` · flow ที่ยังใช้ request นี้: ${r.flowsUsing.join(', ')}` : ''}`);
+    state.logs.push(t('{time}  deleted {name} → {trash}{flows}', { time: new Date().toLocaleTimeString(), name: state.req.name, trash: r.trash, flows: r.flowsUsing.length ? t(' · flows still using this request: {list}', { list: r.flowsUsing.join(', ') }) : '' }));
     renderLog();
     state.req = null;
     await loadTree(false);
@@ -1637,44 +1655,44 @@ $('importBtn').onclick = () => {
 $('pmScan').onclick = async () => {
   const box = $('pmList');
   $('pmScan').disabled = true;
-  box.innerHTML = '<p class="hint">กำลังอ่าน…</p>';
+  box.innerHTML = t('<p class="hint">Reading…</p>');
   try {
     const r = await api('/api/import/postman-desktop');
     if (!r.stores) {
-      box.innerHTML = '<p class="hint">ไม่พบ Postman desktop ในเครื่องนี้</p>';
+      box.innerHTML = t('<p class="hint">Postman desktop was not found on this computer</p>');
       return;
     }
     if (!r.collections.length) {
-      box.innerHTML = '<p class="hint">ไม่พบ request แบบ GraphQL ใน Postman</p>';
+      box.innerHTML = t('<p class="hint">No GraphQL requests found in Postman</p>');
       return;
     }
     box.innerHTML =
       r.collections
         .map(
           (c) => `<label class="check pm-col"><input type="checkbox" value="${esc(c.id)}"${c.requests ? ' checked' : ''}${c.requests ? '' : ' disabled'}>` +
-            `<b>${esc(c.name)}</b> <small>${c.requests} request${c.namesOnly.length ? ` · อีก ${c.namesOnly.length} ตัวมีแต่ชื่อ` : ''}</small></label>` +
+            `<b>${esc(c.name)}</b> <small>${c.requests} request${c.namesOnly.length ? t(' · {n} more with only a name', { n: c.namesOnly.length }) : ''}</small></label>` +
             (c.namesOnly.length
-              ? `<details class="pm-names"><summary>ตัวที่มีแต่ชื่อ — เปิดใน Postman หนึ่งครั้งแล้วนำเข้าใหม่</summary><p>${c.namesOnly.map(esc).join(', ')}</p></details>`
+              ? `<details class="pm-names"><summary>${t('Name only — open them once in Postman, then import again')}</summary><p>${c.namesOnly.map(esc).join(', ')}</p></details>`
               : ''),
         )
-        .join('') + '<button type="button" class="primary" id="pmImport">นำเข้า collection ที่เลือก</button>';
+        .join('') + '<button type="button" class="primary" id="pmImport">' + t('Import selected collections') + '</button>';
     $('pmImport').onclick = async () => {
       const ids = [...box.querySelectorAll('input[type=checkbox]:checked')].map((i) => i.value);
       if (!ids.length) return;
       $('pmImport').disabled = true;
-      $('pmImport').textContent = 'กำลังนำเข้า…';
+      $('pmImport').textContent = t('Importing…');
       try {
         const res = await api('/api/import/postman-desktop', { ids, env: state.env?.name });
         const log = $('importLog');
         for (const c of res.report) {
-          log.insertAdjacentHTML('beforeend', `<li>${esc(c.collection)} → ${esc(c.dir)}: ใหม่ ${c.created}, อัปเดต ${c.updated}</li>${c.notes.map((n) => `<li>  note: ${esc(n)}</li>`).join('')}`);
+          log.insertAdjacentHTML('beforeend', `<li>${esc(c.collection)} → ${esc(c.dir)}: ${t('new {created}, updated {updated}', { created: c.created, updated: c.updated })}</li>${c.notes.map((n) => `<li>  note: ${esc(tr(n))}</li>`).join('')}`);
         }
         await loadTree(false);
       } catch (err) {
         $('importLog').insertAdjacentHTML('beforeend', `<li class="err">${esc(err.message)}</li>`);
       } finally {
         $('pmImport').disabled = false;
-        $('pmImport').textContent = 'นำเข้า collection ที่เลือก';
+        $('pmImport').textContent = t('Import selected collections');
       }
     };
   } catch (err) {
@@ -1688,7 +1706,7 @@ $('pasteGo').onclick = async () => {
   const log = $('importLog');
   try {
     const r = await api('/api/import/paste', { text: $('pasteText').value, collection: $('pasteCollection').value, name: $('pasteName').value, env: state.env?.name });
-    log.insertAdjacentHTML('beforeend', `<li>${esc(r.name)} (${r.kind === 'GraphQLRequest' ? 'GraphQL' : 'REST'}) → ${esc(r.file)}</li>${r.notes.map((n) => `<li>  note: ${esc(n)}</li>`).join('')}`);
+    log.insertAdjacentHTML('beforeend', `<li>${esc(r.name)} (${r.kind === 'GraphQLRequest' ? 'GraphQL' : 'REST'}) → ${esc(r.file)}</li>${r.notes.map((n) => `<li>  note: ${esc(tr(n))}</li>`).join('')}`);
     $('pasteText').value = '';
     $('pasteName').value = '';
     await loadTree(false);
@@ -1702,7 +1720,7 @@ async function importFiles(files) {
   for (const f of files) {
     try {
       const r = await api('/api/import', { name: f.name, json: JSON.parse(await f.text()) });
-      log.insertAdjacentHTML('beforeend', `<li>${esc(f.name)}: ${esc(r.summary)}</li>${(r.notes ?? []).map((n) => `<li>  note: ${esc(n)}</li>`).join('')}`);
+      log.insertAdjacentHTML('beforeend', `<li>${esc(f.name)}: ${esc(tr(r.summary))}</li>${(r.notes ?? []).map((n) => `<li>  note: ${esc(tr(n))}</li>`).join('')}`);
     } catch (err) {
       log.insertAdjacentHTML('beforeend', `<li>✘ ${esc(f.name)}: ${esc(err.message)}</li>`);
     }
@@ -1806,7 +1824,7 @@ async function renderExplorer() {
   if ($('explorer').hidden || collapsed) return;
   const roots = await exFields('query', []).catch(() => []);
   if (ex.noSchema) {
-    box.innerHTML = '<p class="hint">ยังไม่มี schema — ใส่ URL ในแถบด้านบน แล้ว field จะขึ้นที่นี่เอง</p>';
+    box.innerHTML = t('<p class="hint">No schema yet — enter a URL in the bar above and the fields show up here</p>');
     return;
   }
   const q = $('exSearch').value.trim().toLowerCase();
@@ -1823,7 +1841,7 @@ async function renderExplorer() {
       const args = f.args.filter((a) => a.required).map((a) => a.name).join(', ');
       rows.push(
         `<div class="ex-row${f.deprecated ? ' deprecated' : ''}" style="--d:${depth}" data-op="${op}" data-path="${esc(p.join('.'))}" title="${esc(f.description || f.type)}">` +
-          (canOpen ? `<button class="ex-chev" aria-expanded="${open}" aria-label="เปิด ${esc(f.name)}"></button>` : '<span class="ex-chev"></span>') +
+          (canOpen ? `<button class="ex-chev" aria-expanded="${open}" aria-label="${t('Open {name}', { name: esc(f.name) })}"></button>` : '<span class="ex-chev"></span>') +
           `<label><input type="checkbox"${ex.selected.has(k) ? ' checked' : ''}><span class="ex-name">${esc(f.name)}</span>${args ? `<span class="ex-args">(${esc(args)})</span>` : ''}</label>` +
           `<small>${esc(f.type)}</small>` +
           '</div>',
@@ -1837,9 +1855,9 @@ async function renderExplorer() {
         const shown = value === undefined || value === null ? '' : typeof value === 'string' ? value : JSON.stringify(value);
         rows.push(
           `<div class="ex-arg" style="--d:${depth + 1}" data-op="${op}" data-path="${esc(p.join('.'))}" data-arg="${esc(a.name)}" data-type="${esc(a.type)}">` +
-            `<input type="checkbox" class="ex-argon"${u ? ' checked' : ''}${a.required ? ' disabled title="ต้องมี"' : ''} aria-label="ส่ง ${esc(a.name)}">` +
+            `<input type="checkbox" class="ex-argon"${u ? ' checked' : ''}${a.required ? t(' disabled title="Required"') : ''} aria-label="${t('Send {name}', { name: esc(a.name) })}">` +
             `<span class="ex-argname">${esc(a.name)}:</span>` +
-            `<input class="ex-val" value="${esc(shown)}" placeholder="${esc(a.type)}" spellcheck="false" autocomplete="off"${u && u.var === undefined ? ' disabled title="ค่าเขียนตรงใน query"' : ''}>` +
+            `<input class="ex-val" value="${esc(shown)}" placeholder="${esc(a.type)}" spellcheck="false" autocomplete="off"${u && u.var === undefined ? t(' disabled title="The value is written directly in the query"') : ''}>` +
             `<small>${u?.var ? `$${esc(u.var)}` : ''}</small></div>`,
         );
       }
@@ -1852,7 +1870,7 @@ async function renderExplorer() {
           rows.push(
             `<div class="ex-allrow" style="--d:${depth + 1}" data-op="${op}" data-path="${esc(p.join('.'))}">` +
               `<label><input type="checkbox" class="ex-all"${on === leaves.length ? ' checked' : ''}${on > 0 && on < leaves.length ? ' data-partial' : ''}>` +
-              `ทุก field <small>(${on}/${leaves.length})</small></label></div>`,
+              `${t('All fields')} <small>(${on}/${leaves.length})</small></label></div>`,
           );
         }
         await level(op, p, children, depth + 1);
@@ -2085,7 +2103,7 @@ const qMain = document.querySelector('.q-main');
 if (store.get('varsH')) qMain.style.setProperty('--vars-h', `${store.get('varsH')}px`);
 const setVarsFolded = (folded) => {
   document.body.classList.toggle('vars-folded', folded);
-  $('varsFold').textContent = folded ? 'ขยาย' : 'ย่อ';
+  $('varsFold').textContent = folded ? t('Expand') : t('Collapse');
   store.set('varsFolded', folded ? '1' : '');
 };
 setVarsFolded(store.get('varsFolded') === '1');
@@ -2113,8 +2131,8 @@ function renderFlowList(q = '') {
   const flows = (state.tree.flows ?? []).filter((f) => !q || f.name.toLowerCase().includes(q));
   const g = document.createElement('div');
   g.className = 'group flows-group';
-  g.innerHTML = `<div class="group-head"><h3>Flows</h3><button class="icon-btn flow-new" title="สร้าง flow ใหม่">+ Flow</button></div>` +
-    (flows.length ? '' : '<p class="group-empty">ยังไม่มี flow — <button>สร้าง flow แรก</button></p>');
+  g.innerHTML = `<div class="group-head"><h3>Flows</h3><button class="icon-btn flow-new" title="${t('Create a new flow')}">+ Flow</button></div>` +
+    (flows.length ? '' : t('<p class="group-empty">No flows yet — <button>create the first flow</button></p>'));
   for (const f of flows) {
     const b = document.createElement('button');
     b.className = 'req';
@@ -2131,10 +2149,10 @@ function renderFlowList(q = '') {
 
 async function newFlow() {
   const made = await askForm({
-    title: 'Flow ใหม่',
-    desc: 'flow รัน request จากทุก collection ตามลำดับ ส่งค่าต่อกันด้วย $flow.set / pm.environment.set',
-    fields: [{ name: 'name', label: 'ชื่อ flow', value: 'My Flow', required: true }],
-    submit: 'สร้าง flow',
+    title: t('New flow'),
+    desc: t('A flow runs requests from any collection in order, passing values along with $flow.set / pm.environment.set'),
+    fields: [{ name: 'name', label: t('Flow name'), value: 'My Flow', required: true }],
+    submit: t('Create flow'),
     onSubmit: (v) => api('/api/flow/new', v),
   });
   if (!made) return;
@@ -2160,9 +2178,9 @@ async function openFlow(file) {
 function flowStatus(i) {
   const run = state.flowRun;
   const r = run?.results.find((x) => x.index === i);
-  if (!r) return run && run.stoppedAt != null && i > run.stoppedAt ? '<span class="fstat idle">ไม่ได้รัน</span>' : '';
-  if (r.skipped) return '<span class="fstat idle">ข้าม (เงื่อนไขไม่ผ่าน)</span>';
-  if (r.blocked) return '<span class="fstat fail">ถูกกัน (env protected)</span>';
+  if (!r) return run && run.stoppedAt != null && i > run.stoppedAt ? t('<span class="fstat idle">Not run</span>') : '';
+  if (r.skipped) return t('<span class="fstat idle">Skipped (condition not met)</span>');
+  if (r.blocked) return t('<span class="fstat fail">Blocked (protected env)</span>');
   const tests = r.tests?.length ? ` · tests ${r.tests.filter((t) => t.pass).length}/${r.tests.length}` : '';
   return `<span class="fstat ${r.passed ? 'pass' : 'fail'}">${r.passed ? 'PASS' : 'FAIL'} ${r.status ?? ''}${r.timeMs != null ? ` · ${r.timeMs} ms` : ''}${tests}</span>`;
 }
@@ -2173,28 +2191,28 @@ function renderFlow() {
   const blocks = f.steps
     .map((s, i) => `
     <div class="fnode${s.missing ? ' missing' : ''}${state.flowPick === i ? ' picked' : ''}" data-i="${i}">
-      <button class="fnode-head" title="ดูผลของ block นี้">
+      <button class="fnode-head" title="${t('Show this block\'s result')}">
         <span class="fnum">${i + 1}</span>
         <span class="op ${esc(s.op ?? '')}">${esc(opLabel(s.op))}</span>
         <span class="fname">${esc(s.name)}</span>
-        <small>${esc(s.missing ? `ไม่พบ ${s.request}` : s.collection)}</small>
+        <small>${esc(s.missing ? t('Not found: {request}', { request: s.request }) : s.collection)}</small>
         ${flowStatus(i)}
       </button>
       <div class="fnode-body">
-        <label class="fwhen">เงื่อนไข<input value="${esc(s.when ?? '')}" placeholder="ไม่บังคับ เช่น $flow.get('visitId')" spellcheck="false"></label>
-        <label class="check"><input type="checkbox" class="fcont"${s.continueOnFail ? ' checked' : ''}> ไปต่อแม้ไม่ผ่าน</label>
+        <label class="fwhen">${t('Condition')}<input value="${esc(s.when ?? '')}" placeholder="${t('Optional, e.g. $flow.get(\'visitId\')')}" spellcheck="false"></label>
+        <label class="check"><input type="checkbox" class="fcont"${s.continueOnFail ? ' checked' : ''}> ${t('Continue even if it fails')}</label>
         <span class="fnode-actions">
-          <button class="icon-btn" data-act="up" title="เลื่อนขึ้น"${i === 0 ? ' disabled' : ''}>ขึ้น</button>
-          <button class="icon-btn" data-act="down" title="เลื่อนลง"${i === f.steps.length - 1 ? ' disabled' : ''}>ลง</button>
-          <button class="icon-btn" data-act="open" title="เปิด request นี้"${s.missing ? ' disabled' : ''}>เปิด</button>
-          <button class="icon-btn" data-act="rm" title="เอา block นี้ออก">ลบ</button>
+          <button class="icon-btn" data-act="up" title="${t('Move up')}"${i === 0 ? ' disabled' : ''}>${t('Up')}</button>
+          <button class="icon-btn" data-act="down" title="${t('Move down')}"${i === f.steps.length - 1 ? ' disabled' : ''}>${t('Down')}</button>
+          <button class="icon-btn" data-act="open" title="${t('Open this request')}"${s.missing ? ' disabled' : ''}>${t('Open')}</button>
+          <button class="icon-btn" data-act="rm" title="${t('Remove this block')}">${t('Remove')}</button>
         </span>
       </div>
     </div>`)
     .join('');
   const run = state.flowRun;
   const summary = run
-    ? `<p class="frun-sum ${run.passed ? 'pass' : 'fail'}">${run.passed ? 'flow ผ่านทั้งหมด' : `flow หยุดที่ block ${(run.stoppedAt ?? Math.max(run.results.length - 1, 0)) + 1}`}</p>`
+    ? `<p class="frun-sum ${run.passed ? 'pass' : 'fail'}">${run.passed ? t('flow passed') : t('flow stopped at block {n}', { n: (run.stoppedAt ?? Math.max(run.results.length - 1, 0)) + 1 })}</p>`
     : '';
   $('flowCanvas').innerHTML = `<div class="fstart">Start</div>${blocks}<button class="fadd" id="flowAddInline">+ Block</button>${summary}`;
   $('flowAddInline').onclick = addFlowBlock;
@@ -2208,12 +2226,12 @@ function saveFlowSoon() {
 
 async function addFlowBlock() {
   const reqs = state.tree.requests;
-  if (!reqs.length) return alert('ยังไม่มี request ในโปรเจกต์');
+  if (!reqs.length) return alert(t('No requests in the project yet'));
   const picked = await askForm({
-    title: 'เพิ่ม block',
-    desc: 'เลือก request ที่จะรันใน flow (จาก collection ไหนก็ได้)',
+    title: t('Add block'),
+    desc: t('Pick the request to run in the flow (from any collection)'),
     fields: [{ name: 'request', label: 'Request', type: 'select', options: reqs.map((r) => ({ value: r.file, label: `${r.collection} / ${r.name}` })) }],
-    submit: 'เพิ่ม',
+    submit: t('Add'),
     onSubmit: async (v) => v,
   });
   if (!picked) return;
@@ -2272,7 +2290,7 @@ async function runCurrentFlow() {
   try {
     const r = await api('/api/flow/run', { file: state.flowFile, env: state.env.name });
     state.flowRun = r;
-    state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${l}`));
+    state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
     renderLog();
     // show the block that failed, otherwise the last one that ran
     const show = r.results.find((x) => !x.passed && !x.skipped) ?? r.results.filter((x) => !x.skipped).at(-1);
@@ -2295,7 +2313,7 @@ async function runCurrentFlow() {
 }
 $('flowRun').onclick = runCurrentFlow;
 $('flowDelete').onclick = async () => {
-  if (!confirm(`ลบ flow "${state.flow.name}"? (ลบไฟล์ ${state.flowFile})`)) return;
+  if (!confirm(t('Delete flow "{name}"? (deletes the file {file})', { name: state.flow.name, file: state.flowFile }))) return;
   await api('/api/flow/delete', { file: state.flowFile });
   state.view = 'request';
   state.flowFile = null;

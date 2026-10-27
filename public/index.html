@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,66 +9,66 @@
 </head>
 <body>
   <header class="top">
-    <button class="brand" id="brand" type="button" title="เกี่ยวกับ Hyperion"><img src="icon.svg?v=2" alt="" width="20" height="20"><span>Hyperion</span></button>
+    <button class="brand" id="brand" type="button" title="About Hyperion" data-i18n-title><img src="icon.svg?v=2" alt="" width="20" height="20"><span>Hyperion</span></button>
     <div class="project-pick">
-      <button class="project-btn" id="projectBtn" aria-haspopup="menu" aria-expanded="false"><span id="projectName">ยังไม่ได้เปิดโปรเจกต์</span><span class="caret" aria-hidden="true"></span></button>
+      <button class="project-btn" id="projectBtn" aria-haspopup="menu" aria-expanded="false"><span id="projectName" data-i18n>No project open</span><span class="caret" aria-hidden="true"></span></button>
       <div class="menu" id="projectMenu" role="menu" hidden></div>
     </div>
     <div class="envs" id="envs" role="radiogroup" aria-label="Environment"></div>
-    <button class="ghost small" id="envEdit" title="แก้ URL และตัวแปรของ env นี้">แก้ env</button>
+    <button class="ghost small" id="envEdit" title="Edit this env's URLs and variables" data-i18n-title data-i18n>Edit env</button>
     <div class="token" id="token" hidden>
       <span class="token-dot"></span><span id="tokenText"></span>
-      <button class="ghost small" id="tokenRefresh" title="ขอ token ใหม่ตอนนี้">ต่ออายุ</button>
-      <button class="ghost small" id="tokenClear" title="ลบ token ที่เก็บไว้ใน env">ล้าง</button>
+      <button class="ghost small" id="tokenRefresh" title="Get a new token now" data-i18n-title data-i18n>Renew</button>
+      <button class="ghost small" id="tokenClear" title="Remove the token stored in the env" data-i18n-title data-i18n>Clear</button>
     </div>
   </header>
 
-  <div class="guard" role="status">Production — ยิงไปที่ข้อมูลจริง</div>
+  <div class="guard" role="status" data-i18n>Production — requests go to real data</div>
 
   <section class="rail" id="rail" aria-label="Connections">
     <div class="lane lane-exec">
-      <span class="lane-name">ยิงไปที่</span>
+      <span class="lane-name" data-i18n>Send to</span>
       <span class="method" id="method">POST</span>
-      <span class="url-box"><input class="lane-url" id="execUrl" spellcheck="false" autocomplete="off" aria-label="URL" placeholder="เลือก request ทางซ้าย" disabled><small class="url-src" id="urlSrc"></small></span>
-      <button class="ghost small" id="hostVar" hidden title="เปลี่ยน host ในทุก request ที่ใช้ host นี้ให้เป็นตัวแปรของ env">ใช้ host ตาม env</button>
+      <span class="url-box"><input class="lane-url" id="execUrl" spellcheck="false" autocomplete="off" aria-label="URL" placeholder="Pick a request on the left" data-i18n-placeholder disabled><small class="url-src" id="urlSrc"></small></span>
+      <button class="ghost small" id="hostVar" hidden title="Turn this host into an env variable in every request that uses it" data-i18n-title data-i18n>Use host per env</button>
       <button class="send" id="send" disabled>Send <kbd>Ctrl+Enter</kbd></button>
-      <button class="ghost" id="rtClose" hidden title="ปิดการเชื่อมต่อนี้">Disconnect</button>
+      <button class="ghost" id="rtClose" hidden title="Close this connection" data-i18n-title>Disconnect</button>
     </div>
     <div class="lane lane-schema">
-      <span class="lane-name">Schema จาก</span>
-      <span class="lane-status" id="schemaStatus">ยังไม่มี schema</span>
-      <button class="ghost" id="sync" disabled title="โหลด schema ใหม่ตอนนี้ (ปกติโหลดเอง)">sync ใหม่</button>
+      <span class="lane-name" data-i18n>Schema from</span>
+      <span class="lane-status" id="schemaStatus" data-i18n>No schema yet</span>
+      <button class="ghost" id="sync" disabled title="Reload the schema now (it normally loads by itself)" data-i18n-title data-i18n>Sync now</button>
     </div>
   </section>
 
   <section class="welcome" id="welcome" hidden>
-    <h1>เปิดโปรเจกต์</h1>
-    <p>Hyperion ใช้ได้กับทุกโปรเจกต์ — โปรเจกต์คือโฟลเดอร์ที่มี <code>hyperion.yaml</code> (ใส่ไว้ใน repo ของโปรเจกต์นั้นได้เลย)</p>
+    <h1 data-i18n>Open a project</h1>
+    <p><span data-i18n>Hyperion works with any project — a project is a folder that contains</span> <code>hyperion.yaml</code> <span data-i18n>(you can keep it right in that project's repo)</span></p>
     <div class="welcome-actions">
-      <button class="primary" id="welcomeNew">สร้างโปรเจกต์ใหม่…</button>
-      <button class="ghost" id="welcomeOpen">เปิดโฟลเดอร์…</button>
+      <button class="primary" id="welcomeNew" data-i18n>New project…</button>
+      <button class="ghost" id="welcomeOpen" data-i18n>Open folder…</button>
     </div>
     <ul class="recent" id="recent"></ul>
   </section>
 
   <main class="work">
     <nav class="side" aria-label="Requests">
-      <input class="filter" id="filter" type="search" placeholder="ค้นหา request">
+      <input class="filter" id="filter" type="search" placeholder="Search requests" data-i18n-placeholder>
       <div class="side-actions">
-        <button class="ghost small" id="newColBtn" title="สร้าง collection ใหม่">+ Collection</button>
-        <button class="ghost small" id="importBtn" title="นำเข้า Postman collection / environment">Import</button>
+        <button class="ghost small" id="newColBtn" title="Create a new collection" data-i18n-title>+ Collection</button>
+        <button class="ghost small" id="importBtn" title="Import a Postman collection / environment" data-i18n-title>Import</button>
       </div>
       <div id="tree"></div>
     </nav>
 
     <section class="editor" aria-label="Request">
-      <div class="pane-resize" id="paneResize" title="ลากเพื่อปรับความกว้าง request / response (ดับเบิลคลิกคืนค่าเดิม)"></div>
+      <div class="pane-resize" id="paneResize" title="Drag to resize request / response (double-click to reset)" data-i18n-title></div>
       <div class="pane-head">
         <h1 id="reqName">—</h1>
         <span class="op" id="opBadge" hidden></span>
-        <button class="ghost small push" id="move" disabled title="ย้าย request นี้ไป collection อื่น">ย้าย…</button>
-        <button class="ghost small ghost-danger" id="delReq" disabled title="ลบ request นี้ (ย้ายไป .hyperion/trash กู้คืนได้)">ลบ</button>
-        <span class="save-state" id="save" title="แก้แล้วบันทึกลงไฟล์ให้เอง (Ctrl+S บันทึกทันที)">บันทึกอัตโนมัติ</span>
+        <button class="ghost small push" id="move" disabled title="Move this request to another collection" data-i18n-title data-i18n>Move…</button>
+        <button class="ghost small ghost-danger" id="delReq" disabled title="Delete this request (moved to .hyperion/trash, recoverable)" data-i18n-title data-i18n>Delete</button>
+        <span class="save-state" id="save" title="Edits are saved to the file automatically (Ctrl+S saves now)" data-i18n-title data-i18n>Autosave</span>
       </div>
       <div class="tabs req-tabs" role="tablist" aria-label="Request">
         <button role="tab" data-rtab="query" aria-selected="true">Query</button>
@@ -79,25 +79,25 @@
       <div class="rpanel q-split" id="rtab-query">
         <aside class="explorer" id="explorer" aria-label="Schema fields">
           <div class="ex-head">
-            <input class="filter" id="exSearch" type="search" placeholder="ค้นหา field">
-            <button class="icon-btn ex-collapse" id="exCollapse" title="ย่อรายการ field">«</button>
+            <input class="filter" id="exSearch" type="search" placeholder="Search fields" data-i18n-placeholder>
+            <button class="icon-btn ex-collapse" id="exCollapse" title="Collapse the field list" data-i18n-title>«</button>
           </div>
           <div class="ex-tree" id="exTree"></div>
-          <button class="ex-expand" id="exExpand" title="ขยายรายการ field">Schema</button>
-          <div class="ex-resize" id="exResize" title="ลากเพื่อปรับความกว้าง (ดับเบิลคลิกคืนค่าเดิม)"></div>
+          <button class="ex-expand" id="exExpand" title="Expand the field list" data-i18n-title>Schema</button>
+          <div class="ex-resize" id="exResize" title="Drag to resize (double-click to reset)" data-i18n-title></div>
         </aside>
         <div class="q-main">
         <!-- WebSocket / Socket.IO / gRPC: what to connect to and what to send (the editor below is the message) -->
         <div class="rt-bar" id="rtBar" hidden>
-          <label data-rt="ws">Sub-protocol<input id="rtProtocols" class="mono" placeholder="ไม่บังคับ เช่น graphql-ws" spellcheck="false" autocomplete="off"></label>
+          <label data-rt="ws">Sub-protocol<input id="rtProtocols" class="mono" placeholder="Optional, e.g. graphql-ws" data-i18n-placeholder spellcheck="false" autocomplete="off"></label>
           <label data-rt="sio">Event<input id="rtEvent" class="mono" placeholder="message" spellcheck="false" autocomplete="off"></label>
           <label data-rt="sio">Namespace<input id="rtNamespace" class="mono" placeholder="/" spellcheck="false" autocomplete="off"></label>
-          <label data-rt="sio" class="check"><input type="checkbox" id="rtAck"> รอ ack</label>
-          <label data-rt="sio" class="wide">Auth payload (ตอน connect)<input id="rtAuthPayload" class="mono" placeholder='ว่าง = ส่ง {"token": …} จาก Authorization' spellcheck="false" autocomplete="off"></label>
-          <label data-rt="grpc" class="wide">ไฟล์ .proto<input id="rtProto" class="mono" placeholder="protos/service.proto (จากโฟลเดอร์โปรเจกต์ หรือ path เต็ม)" spellcheck="false" autocomplete="off"></label>
+          <label data-rt="sio" class="check" data-i18n><input type="checkbox" id="rtAck"> Wait for ack</label>
+          <label data-rt="sio" class="wide" data-i18n>Auth payload (on connect)<input id="rtAuthPayload" class="mono" placeholder='Empty = send {"token": …} from Authorization' data-i18n-placeholder spellcheck="false" autocomplete="off"></label>
+          <label data-rt="grpc" class="wide" data-i18n>.proto file<input id="rtProto" class="mono" placeholder="protos/service.proto (from the project folder, or a full path)" data-i18n-placeholder spellcheck="false" autocomplete="off"></label>
           <label data-rt="grpc" class="wide">Method<select id="rtMethod"></select></label>
           <label data-rt="grpc" class="check"><input type="checkbox" id="rtTls"> TLS</label>
-          <button data-rt="grpc" class="ghost small" id="rtExample" type="button" title="ใส่ message ตัวอย่างของ method นี้">ตัวอย่าง message</button>
+          <button data-rt="grpc" class="ghost small" id="rtExample" type="button" title="Insert a sample message for this method" data-i18n-title data-i18n>Sample message</button>
           <small class="rt-hint" id="rtHint"></small>
         </div>
         <div class="code-wrap grow" id="queryWrap">
@@ -106,7 +106,7 @@
           <ul class="ac" id="ac" role="listbox" hidden></ul>
         </div>
         <ul class="lint" id="lint"></ul>
-        <div class="sub-head vars-head" id="varsHead" title="ลากขึ้น / ลงเพื่อปรับความสูง (ดับเบิลคลิกคืนค่าเดิม)"><span>Variables</span><small id="varsHint">JSON — ใช้ {{ชื่อตัวแปร}} จาก env ได้</small><button class="icon-btn" id="varsFold" type="button" title="ย่อ / ขยาย Variables">ย่อ</button></div>
+        <div class="sub-head vars-head" id="varsHead" title="Drag up / down to resize (double-click to reset)" data-i18n-title><span>Variables</span><small id="varsHint" data-i18n>JSON — env {{variables}} can be used</small><button class="icon-btn" id="varsFold" type="button" title="Collapse / expand Variables" data-i18n-title data-i18n>Collapse</button></div>
         <div class="code-wrap vars-wrap">
           <pre class="hl" aria-hidden="true"><code id="varsHl"></code></pre>
           <textarea id="vars" spellcheck="false" aria-label="Variables JSON"></textarea>
@@ -116,21 +116,21 @@
       <div class="rpanel form-panel" id="rtab-auth" hidden>
         <label class="row">Auth type
           <select id="authType">
-            <option value="inherit">ใช้ของ collection</option>
-            <option value="none">ไม่มี</option>
+            <option value="inherit" data-i18n>Inherit from collection</option>
+            <option value="none" data-i18n>None</option>
             <option value="bearer">Bearer Token</option>
             <option value="basic">Basic Auth</option>
             <option value="apiKey">API Key</option>
           </select>
         </label>
         <p class="hint" id="authInherit"></p>
-        <div data-auth="bearer"><label class="row">Token<input id="bearerToken" class="mono" placeholder="วาง token ที่นี่" spellcheck="false" autocomplete="off"></label>
-          <p class="hint" id="bearerHint">วาง token แล้วระบบเก็บไว้ใน env ที่เลือกอยู่ (ไฟล์ .local ไม่เข้า Git) และใส่ <code>{{BEARER_TOKEN}}</code> ให้ · ส่งเป็น <code>Authorization: Bearer &lt;token&gt;</code></p></div>
+        <div data-auth="bearer"><label class="row">Token<input id="bearerToken" class="mono" placeholder="Paste the token here" data-i18n-placeholder spellcheck="false" autocomplete="off"></label>
+          <p class="hint" id="bearerHint"><span data-i18n>Paste a token and it is stored in the selected env (a .local file, not in Git) and</span> <code>{{BEARER_TOKEN}}</code> <span data-i18n>is put here · sent as</span> <code>Authorization: Bearer &lt;token&gt;</code></p></div>
         <div data-auth="basic"><label class="row">Username<input id="basicUser" class="mono" spellcheck="false" autocomplete="off"></label>
           <label class="row">Password<input id="basicPass" class="mono" spellcheck="false" autocomplete="off" placeholder="{{secret:NAME}}"></label></div>
         <div data-auth="apiKey"><label class="row">Key<input id="apiKeyName" class="mono" placeholder="X-API-Key" spellcheck="false" autocomplete="off"></label>
           <label class="row">Value<input id="apiKeyValue" class="mono" spellcheck="false" autocomplete="off"></label>
-          <label class="row">ส่งใน<select id="apiKeyIn"><option value="header">Header</option><option value="query">Query string</option></select></label></div>
+          <label class="row" data-i18n>Send in<select id="apiKeyIn"><option value="header">Header</option><option value="query">Query string</option></select></label></div>
       </div>
       <div class="rpanel form-panel" id="rtab-headers" hidden>
         <div class="kv-edit" id="reqHeaders"><button type="button" class="ghost small kv-add">+ Header</button></div>
@@ -144,7 +144,7 @@
           <h1 id="flowName">—</h1>
           <span class="op flow">flow</span>
           <button class="ghost small push" id="flowAdd">+ Block</button>
-          <button class="ghost small" id="flowDelete" title="ลบไฟล์ flow นี้">ลบ flow</button>
+          <button class="ghost small" id="flowDelete" title="Delete this flow file" data-i18n-title data-i18n>Delete flow</button>
           <button class="send" id="flowRun">Run <kbd>Ctrl+Enter</kbd></button>
         </div>
         <div class="flow-canvas" id="flowCanvas"></div>
@@ -153,9 +153,9 @@
 
     <section class="result" aria-label="Response">
       <div class="pane-head">
-        <span class="status" id="status">ยังไม่ได้ยิง</span>
+        <span class="status" id="status" data-i18n>Not sent yet</span>
         <span class="meta" id="resMeta"></span>
-        <label class="phi"><input type="checkbox" id="unmask"> แสดงข้อมูลผู้ป่วย</label>
+        <label class="phi" data-i18n><input type="checkbox" id="unmask"> Show patient data</label>
       </div>
       <div class="tabs" role="tablist">
         <button role="tab" data-tab="body" aria-selected="true">Body</button>
@@ -163,7 +163,7 @@
         <button role="tab" data-tab="log">Log <span id="logCount"></span></button>
         <button role="tab" data-tab="headers">Headers</button>
       </div>
-      <div class="tab-body" id="tab-body"><div class="empty">กด Send เพื่อยิง request — response จะแสดงที่นี่</div></div>
+      <div class="tab-body" id="tab-body"><div class="empty" data-i18n>Press Send to send the request — the response shows up here</div></div>
       <div class="tab-body" id="tab-tests" hidden></div>
       <div class="tab-body" id="tab-log" hidden></div>
       <div class="tab-body" id="tab-headers" hidden></div>
@@ -174,15 +174,15 @@
     <div class="about-hero">
       <img src="icon.svg?v=2" alt="" width="64" height="64">
       <h2 id="aboutName">Hyperion API</h2>
-      <p class="about-tag">เครื่องมือทดสอบ API ที่ใช้ได้ทุกโปรเจกต์</p>
+      <p class="about-tag" data-i18n>An API testing tool for every project</p>
       <span class="about-version" id="aboutVersion"></span>
     </div>
-    <div class="about-chips" aria-label="รองรับ"><span>GraphQL</span><span>REST</span><span>gRPC</span><span>WebSocket</span><span>Socket.IO</span></div>
+    <div class="about-chips" aria-label="Supports" data-i18n-aria><span>GraphQL</span><span>REST</span><span>gRPC</span><span>WebSocket</span><span>Socket.IO</span></div>
     <dl class="about-meta">
-      <dt>ผู้พัฒนา</dt><dd id="aboutDev"></dd>
+      <dt data-i18n>Developer</dt><dd id="aboutDev"></dd>
       <dt>Runtime</dt><dd id="aboutNode"></dd>
     </dl>
-    <menu><button type="button" class="primary" id="aboutClose">ปิด</button></menu>
+    <menu><button type="button" class="primary" id="aboutClose" data-i18n>Close</button></menu>
   </dialog>
 
   <dialog id="formDlg">
@@ -192,7 +192,7 @@
       <div id="formFields" class="fields"></div>
       <p class="form-error" id="formError" hidden></p>
       <menu>
-        <button type="button" class="ghost" id="formCancel">ยกเลิก</button>
+        <button type="button" class="ghost" id="formCancel" data-i18n>Cancel</button>
         <button type="submit" class="primary" id="formOk"></button>
       </menu>
     </form>
@@ -200,25 +200,25 @@
 
   <dialog id="importDlg">
     <form method="dialog">
-      <h2>นำเข้าจาก Postman</h2>
-      <h3 class="import-sub">จาก Postman ในเครื่องนี้ (รวม request แบบ GraphQL)</h3>
-      <p>อ่านจากโปรแกรม Postman ที่ติดตั้งอยู่โดยตรง — ไม่ต้อง export, ไม่แก้อะไรใน Postman</p>
+      <h2 data-i18n>Import from Postman</h2>
+      <h3 class="import-sub" data-i18n>From Postman on this computer (GraphQL requests included)</h3>
+      <p data-i18n>Reads straight from the installed Postman app — no export needed, nothing in Postman is changed</p>
       <div class="pm-desk">
-        <button type="button" class="ghost small" id="pmScan">อ่านจาก Postman</button>
+        <button type="button" class="ghost small" id="pmScan" data-i18n>Read from Postman</button>
         <div id="pmList"></div>
       </div>
-      <h3 class="import-sub">จากไฟล์ที่ export</h3>
-      <p>Collection (v2.1) หรือ Environment ที่ export เป็น .json — request แปลงเป็น *.req.yaml, ค่า secret ของ env ย้ายไป secrets.local.yaml</p>
-      <label class="drop" id="drop">ลากไฟล์ .json มาวาง หรือคลิกเพื่อเลือก<input type="file" id="importFile" accept=".json,application/json" multiple hidden></label>
-      <h3 class="import-sub">หรือวาง cURL / GraphQL query</h3>
-      <p>request แบบ GraphQL ของ Postman export ไม่ได้ — เปิด request นั้นใน Postman แล้วคัดลอก <b>Code (&lt;/&gt;) → cURL</b> หรือคัดลอก query จากแท็บ Query มาวางที่นี่</p>
+      <h3 class="import-sub" data-i18n>From exported files</h3>
+      <p data-i18n>A Collection (v2.1) or Environment exported as .json — requests become *.req.yaml, env secrets move to secrets.local.yaml</p>
+      <label class="drop" id="drop" data-i18n>Drop .json files here or click to choose<input type="file" id="importFile" accept=".json,application/json" multiple hidden></label>
+      <h3 class="import-sub" data-i18n>Or paste a cURL / GraphQL query</h3>
+      <p><span data-i18n>Postman cannot export GraphQL requests — open the request in Postman and copy</span> <b>Code (&lt;/&gt;) → cURL</b> <span data-i18n>or copy the query from the Query tab and paste it here</span></p>
       <div class="paste-row">
-        <select id="pasteCollection" aria-label="ใส่ใน collection"></select>
-        <input id="pasteName" placeholder="ชื่อ request (ไม่บังคับ)" autocomplete="off">
+        <select id="pasteCollection" aria-label="Into collection" data-i18n-aria></select>
+        <input id="pasteName" placeholder="Request name (optional)" data-i18n-placeholder autocomplete="off">
       </div>
-      <textarea id="pasteText" rows="7" spellcheck="false" placeholder="curl 'https://…/graphql' -H 'Authorization: Bearer …' --data-raw '{&quot;query&quot;:&quot;…&quot;}'&#10;&#10;หรือ&#10;&#10;query Api {&#10;  api { id }&#10;}"></textarea>
+      <textarea id="pasteText" rows="7" spellcheck="false" data-i18n-placeholder placeholder="curl 'https://…/graphql' -H 'Authorization: Bearer …' --data-raw '{&quot;query&quot;:&quot;…&quot;}'&#10;&#10;or&#10;&#10;query Api {&#10;  api { id }&#10;}"></textarea>
       <ul class="import-log" id="importLog"></ul>
-      <menu><button type="button" class="primary" id="pasteGo">นำเข้าจากที่วาง</button><button value="close" class="ghost">ปิด</button></menu>
+      <menu><button type="button" class="primary" id="pasteGo" data-i18n>Import pasted text</button><button value="close" class="ghost" data-i18n>Close</button></menu>
     </form>
   </dialog>
 
