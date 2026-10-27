@@ -8,6 +8,12 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  // Settings: fonts
+  "UI font": "ฟอนต์ของแอป",
+  "Text size": "ขนาดตัวอักษร",
+  "Code font": "ฟอนต์โค้ด",
+  "Code size": "ขนาดโค้ด",
+  "Default": "ค่าเริ่มต้น",
   // Scripts tab
   "Pre-request": "ก่อนยิง (Pre-request)",
   "Runs before sending — e.g. $req.headers.set(\"X-Id\", \"1\")": "รันก่อนยิง — เช่น $req.headers.set(\"X-Id\", \"1\")",

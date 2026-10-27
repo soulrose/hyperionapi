@@ -292,13 +292,64 @@ async function showAbout() {
   $('aboutClose').focus();
 }
 // Settings: UI language (the page reloads in the chosen language)
+// ---------- fonts: UI font, code font and sizes, kept on this computer and applied at once ----------
+const FONT_KEY = 'hyperion.fonts';
+const FONT_DEFAULTS = { uiFont: '', uiSize: '100', codeFont: '', codeSize: '13' };
+const UI_FONTS = ['Segoe UI Variable Text', 'Segoe UI', 'Leelawadee UI', 'Tahoma', 'Noto Sans Thai', 'IBM Plex Sans Thai', 'Sarabun', 'Prompt', 'Kanit', 'Inter', 'Roboto', 'Arial', 'Calibri', 'Verdana'];
+const CODE_FONTS = ['Cascadia Code', 'Cascadia Mono', 'Consolas', 'JetBrains Mono', 'Fira Code', 'Source Code Pro', 'IBM Plex Mono', 'Courier New', 'Lucida Console'];
+
+function fontPrefs() {
+  try {
+    return { ...FONT_DEFAULTS, ...JSON.parse(localStorage.getItem(FONT_KEY) || '{}') };
+  } catch {
+    return { ...FONT_DEFAULTS };
+  }
+}
+function applyFonts(p = fontPrefs()) {
+  const s = document.documentElement.style;
+  // Thai text falls back to a Thai font when the chosen one has no Thai letters
+  if (p.uiFont) s.setProperty('--sans', `"${p.uiFont}", "Leelawadee UI", Tahoma, system-ui, sans-serif`);
+  else s.removeProperty('--sans');
+  if (p.codeFont) s.setProperty('--mono', `"${p.codeFont}", "Cascadia Mono", Consolas, "Leelawadee UI", monospace`);
+  else s.removeProperty('--mono');
+  s.setProperty('--code-size', `${p.codeSize}px`);
+  s.zoom = p.uiSize === '100' ? '' : String(Number(p.uiSize) / 100);
+}
+applyFonts();
+
+// installed? a font is there when text in it measures differently from both generic fallbacks
+const fontCanvas = document.createElement('canvas').getContext('2d');
+function fontInstalled(name) {
+  const w = (font) => ((fontCanvas.font = `32px ${font}`), fontCanvas.measureText('mmmmmmmmmmlli ก่ข้า 0O').width);
+  return ['monospace', 'serif'].some((base) => w(`"${name}", ${base}`) !== w(base));
+}
+
 async function showSettings() {
   toggleMenu(false);
+  const p = fontPrefs();
+  const fontOptions = (list) => [{ value: '', label: t('Default') }, ...list.filter(fontInstalled).map((f) => ({ value: f, label: f }))];
   await askForm({
     title: t('Settings'),
-    fields: [{ name: 'lang', label: t('Language'), type: 'seg', showLabel: true, value: lang, options: [{ value: 'en', label: 'English' }, { value: 'th', label: 'ไทย' }] }],
+    fields: [
+      { name: 'lang', label: t('Language'), type: 'seg', showLabel: true, value: lang, options: [{ value: 'en', label: 'English' }, { value: 'th', label: 'ไทย' }] },
+      { name: 'uiFont', label: t('UI font'), type: 'select', value: p.uiFont, options: fontOptions(UI_FONTS) },
+      { name: 'uiSize', label: t('Text size'), type: 'seg', showLabel: true, value: p.uiSize, options: ['90', '100', '110', '125'].map((v) => ({ value: v, label: `${v}%` })) },
+      { name: 'codeFont', label: t('Code font'), type: 'select', value: p.codeFont, options: fontOptions(CODE_FONTS) },
+      { name: 'codeSize', label: t('Code size'), type: 'select', value: p.codeSize, options: ['11', '12', '13', '14', '15', '16', '18', '20'].map((v) => ({ value: v, label: `${v} px` })) },
+    ],
     autosave: true, // one button: Close
-    onInput: (form) => { const l = form.elements.lang.value; if (l && l !== lang) setLang(l); },
+    // fonts change as you pick them; a new language reloads the page
+    onInput: (form) => {
+      const next = { uiFont: form.elements.uiFont.value, uiSize: form.elements.uiSize.value, codeFont: form.elements.codeFont.value, codeSize: form.elements.codeSize.value };
+      try {
+        localStorage.setItem(FONT_KEY, JSON.stringify(next));
+      } catch {
+        // storage blocked: still applied for this session
+      }
+      applyFonts(next);
+      const l = form.elements.lang.value;
+      if (l && l !== lang) setLang(l);
+    },
     onSubmit: () => true,
   });
 }
