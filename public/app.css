@@ -635,3 +635,11 @@ button.brand:hover { background: var(--fill); }
 #aboutDev { font-weight: 650; }
 #aboutDlg menu { justify-content: center; padding: 0 24px 22px; }
 #aboutDlg menu .primary { min-width: 120px; }
+
+/* Scripts tab: pre-request box, snippet buttons, post-response box (takes the rest) */
+.scripts-panel { flex-direction: column; }
+.scripts-panel .script-wrap { flex: 0 0 140px; }
+.scripts-panel .script-wrap.grow { flex: 1 1 auto; min-height: 160px; }
+.snippets { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px 8px; }
+.t-cmt { color: var(--ink-3); font-style: italic; }
+#tab-tests .empty button { margin-top: 10px; }

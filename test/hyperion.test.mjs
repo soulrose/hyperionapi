@@ -709,6 +709,16 @@ test('realtime in the app: WebSocket / Socket.IO requests (env URL + collection 
     const vv = createVars({ collection: colDoc.variables, env: await loadEnv(p2, 'dev'), secrets: p2.secrets });
     assert.equal(interpolate('{{baseUrl}}?k={{apiKey}}', vv), 'http://gw/x?k=k-123');
 
+    // Scripts tab: the edited test runs on Send (not yet saved), then autosave writes it to the file
+    const gp = 'collections/sample/patient/get-patient.req.yaml';
+    const scripts = { beforeRequest: '', afterResponse: '$test("from the app", () => {\n  $expect($res.status).toBe(200);\n});\n' };
+    const ran = await call('/api/run', { file: gp, env: 'dev', scripts });
+    assert.deepEqual(ran.tests.map((x) => [x.name, x.pass]), [['from the app', true]]);
+    await call('/api/save', { file: gp, scripts });
+    const gpDoc = YAML.parse(await readFile(path.join(root, gp), 'utf8'));
+    assert.equal(gpDoc.scripts.beforeRequest, undefined);
+    assert.match(gpDoc.scripts.afterResponse, /from the app/);
+
     // delete: the file goes to .hyperion/trash and leaves the tree
     const del = await call('/api/request/delete', { file: 'collections/grpc/grpc-count.req.yaml' });
     assert.match(del.trash, /^\.hyperion\/trash\/.+grpc-count\.req\.yaml$/);

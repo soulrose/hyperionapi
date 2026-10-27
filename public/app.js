@@ -56,6 +56,21 @@ function hlJSON(src) {
   return out + esc(src.slice(last)) + '\n';
 }
 
+// scripts: comments, strings, keywords, the script API ($test, $res, pm, …) and numbers
+const JSRE = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|\b(const|let|var|if|else|return|await|async|function|new|true|false|null|undefined|of|in|for)\b|(\$\w+|\bpm\b)|(\b\d+(?:\.\d+)?\b)/g;
+function hlJS(src) {
+  let out = '';
+  let last = 0;
+  for (const m of src.matchAll(JSRE)) {
+    out += esc(src.slice(last, m.index));
+    const [all, comment, str, kw, api, num] = m;
+    const cls = comment ? 't-cmt' : str ? 't-str' : kw ? 't-kw' : api ? 't-key' : num ? 't-num' : '';
+    out += `<span class="${cls}">${esc(all)}</span>`;
+    last = m.index + all.length;
+  }
+  return out + esc(src.slice(last)) + '\n';
+}
+
 function bindEditor(textarea, code, hl) {
   const pre = code.parentElement;
   const paint = () => { code.innerHTML = hl(textarea.value); };
@@ -84,6 +99,8 @@ const isGql = () => state.req?.kind === 'GraphQLRequest' || (state.req && !state
 
 const paintQuery = bindEditor($('query'), $('queryHl'), (s) => (isRt() ? hlJSON(s) : hlGraphQL(s)));
 const paintVars = bindEditor($('vars'), $('varsHl'), hlJSON);
+const paintPre = bindEditor($('preScript'), $('preScriptHl'), hlJS);
+const paintPost = bindEditor($('postScript'), $('postScriptHl'), hlJS);
 
 // ---------- masking (same rule as the CLI) ----------
 function mask(value, fields) {
@@ -912,12 +929,11 @@ async function openRequest(file) {
   disarmDelete();
   $('sync').disabled = !isGql();
   const s = r.scripts ?? {};
-  $('scriptsDot').hidden = !s.beforeRequest && !s.afterResponse;
-  $('scriptsBody').innerHTML =
-    ['beforeRequest', 'afterResponse']
-      .filter((k) => s[k])
-      .map((k) => `<h4>${k}</h4><pre>${esc(s[k])}</pre>`)
-      .join('') || t('<p class="hint">This request has no scripts — write them in the .req.yaml file under scripts:</p>');
+  $('preScript').value = s.beforeRequest ?? '';
+  $('postScript').value = s.afterResponse ?? '';
+  paintPre();
+  paintPost();
+  markScripts();
   fillAuth(r.auth, r.inheritedAuth);
   fillHeaders(r.headers, r.inheritedHeaders);
   r.authKey = JSON.stringify([readAuth(), readHeaders()]); // to notice a token change later
@@ -1272,7 +1288,7 @@ async function send() {
   } catch {
     return validate();
   }
-  const body = { file: state.req.file, env: state.env.name, variables, auth: readAuth(), headers: readHeaders() };
+  const body = { file: state.req.file, env: state.env.name, variables, auth: readAuth(), headers: readHeaders(), scripts: readScripts() };
   if (state.req.kind !== 'HttpRequest') body.query = $('query').value;
   const op = currentOp();
   const writes = state.req.kind === 'HttpRequest' ? !['GET', 'HEAD', 'OPTIONS'].includes(state.req.method) : op.type === 'mutation';
@@ -1329,7 +1345,7 @@ function renderResult() {
   $('testCount').className = failed ? 'fail' : '';
   $('tab-tests').innerHTML = tests.length
     ? `<ul class="tests">${tests.map((t) => `<li class="${t.pass ? 'pass' : 'fail'}">${esc(t.name)}${t.error ? `<small>${esc(tr(t.error))}</small>` : ''}</li>`).join('')}</ul>`
-    : t('<div class="empty">This request has no tests — write $test(...) in afterResponse</div>');
+    : `<div class="empty">${t('This request has no tests yet')}<br><button type="button" class="ghost small" data-write-test>${t('Write a test')}</button></div>`;
 
   state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
   renderLog();
@@ -1355,6 +1371,37 @@ function selectTab(name) {
 for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => selectTab(b.dataset.tab);
 
 // ---------- request tabs: Query / Authorization / Headers / Scripts ----------
+// ---------- Scripts tab: pre-request / post-response (tests), autosaved, sent as edited ----------
+const readScripts = () => ({ beforeRequest: $('preScript').value, afterResponse: $('postScript').value });
+const markScripts = () => ($('scriptsDot').hidden = !$('preScript').value.trim() && !$('postScript').value.trim());
+
+const SNIPPETS = {
+  status: () => `$test(${JSON.stringify(t('status is 200'))}, () => {\n  $expect($res.status).toBe(200);\n});\n`,
+  noErrors: () => `$test(${JSON.stringify(t('no GraphQL errors'))}, () => {\n  $expect($res.json?.errors).toBeUndefined();\n});\n`,
+  hasField: () => `$test(${JSON.stringify(t('data is returned'))}, () => {\n  $expect($res.json?.data).toBeTruthy();\n});\n`,
+  time: () => `$test(${JSON.stringify(t('faster than 1 s'))}, () => {\n  $expect($res.timeMs < 1000).toBe(true);\n});\n`,
+  save: () => `// ${t('keep a value for the next requests: use it as {{NAME}}')}\n$env.set("NAME", $res.json?.data);\n`,
+};
+// a snippet goes at the cursor (on its own line) of the post-response box
+function addSnippet(key) {
+  const ta = $('postScript');
+  const before = ta.value.slice(0, ta.selectionStart);
+  insertText(ta, `${before && !before.endsWith('\n') ? '\n' : ''}${SNIPPETS[key]()}`);
+  ta.focus();
+}
+$('snippets').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-snippet]');
+  if (b) addSnippet(b.dataset.snippet);
+});
+$('tab-tests').addEventListener('click', (e) => {
+  if (!e.target.closest('[data-write-test]')) return;
+  selectReqTab('scripts');
+  const ta = $('postScript');
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
+  if (!ta.value.trim()) addSnippet(isGql() ? 'noErrors' : 'status');
+  ta.focus();
+});
+
 function selectReqTab(name) {
   for (const b of document.querySelectorAll('[data-rtab]')) b.setAttribute('aria-selected', String(b.dataset.rtab === name));
   for (const t of ['query', 'auth', 'headers', 'scripts']) $(`rtab-${t}`).hidden = t !== name;
@@ -1482,7 +1529,7 @@ async function saveNow() {
     return validate();
   }
   try {
-    await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() ? undefined : variables, rt: isRt() ? readRt() : undefined, auth: readAuth(), headers: readHeaders() });
+    await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() ? undefined : variables, rt: isRt() ? readRt() : undefined, auth: readAuth(), headers: readHeaders(), scripts: readScripts() });
     $('save').textContent = t('Saved {time}', { time: new Date().toLocaleTimeString() });
     // token or headers changed while the schema is not this env's own: try this env's schema again
     const authKey = JSON.stringify([readAuth(), readHeaders()]);
@@ -1495,6 +1542,8 @@ async function saveNow() {
 $('query').addEventListener('input', scheduleSave);
 $('vars').addEventListener('input', scheduleSave);
 $('rtab-auth').addEventListener('input', scheduleSave);
+$('preScript').addEventListener('input', () => (markScripts(), scheduleSave()));
+$('postScript').addEventListener('input', () => (markScripts(), scheduleSave()));
 $('rtab-auth').addEventListener('change', scheduleSave);
 $('reqHeaders').addEventListener('input', scheduleSave);
 $('reqHeaders').addEventListener('click', (e) => e.target.closest('.kv-add, .kv-rm') && scheduleSave());

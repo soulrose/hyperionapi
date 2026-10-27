@@ -53,7 +53,7 @@ schema โหลดเอง (ตอนเปิด request / เปลี่ย
 - **Query** — ซ้ายเป็นรายการ field จาก schema (โหลดเอง): เปิด field แบบ object แล้วแถวแรก **ทุก field (n)** ติ๊ก/เอาติ๊กออกทุก field ธรรมดาข้างใน (object ข้างในมีแถวของตัวเอง); เปิด field ที่มี argument จะมีช่องกรอกค่า — พิมพ์แล้วค่าไปอยู่ใน Variables และ argument ถูกใส่ใน query เป็น $ตัวแปรเอง (argument ที่ไม่บังคับมี checkbox); ติ๊ก field แล้ว query ถูกเขียนให้, เอาติ๊กออก field ก็หายจาก query; argument ที่บังคับกลายเป็น `$ตัวแปร` และโผล่ใน Variables ให้เติมค่า; พิมพ์ query เองแล้วติ๊กก็ตามให้ · ปุ่ม **«** ย่อแผงเหลือแถบ "Schema" (กดเพื่อขยาย) · ลากขอบขวาเพื่อปรับความกว้าง (ดับเบิลคลิกคืนค่าเดิม)
 - **Authorization** — ใช้ของ collection (ค่าเริ่มต้น), ไม่มี, Bearer Token, Basic, API Key — token ใส่เป็น `{{bearer_token}}` เพื่อใช้ค่าจาก env ได้
 - **Headers** — header ของ request นี้ (ชื่อซ้ำกับของ collection จะทับ) และแสดง header ที่ได้จาก collection ให้ดู
-- **Scripts** — beforeRequest / afterResponse ของไฟล์
+- **Scripts** — เขียนได้ในแอป: **Pre-request** (ก่อนยิง เช่น `$req.headers.set(...)`) และ **Post-response (tests)** (`$test`, `$expect`, `$res.status`, `$res.json`, `$res.timeMs`, เก็บค่าด้วย `$env.set`) · ปุ่มตัวอย่าง: Status 200, ไม่มี error ของ GraphQL, มีข้อมูลกลับมา, เร็วกว่า 1 วินาที, เก็บค่าไว้ในตัวแปร · Send ใช้ script ตามที่แก้อยู่ และบันทึกลง `.req.yaml` เอง · แท็บ Tests ที่ยังว่างมีปุ่ม **Write a test**
 - Send ใช้ค่าในแท็บทันทีแม้ยังไม่บันทึก · **บันทึกลงไฟล์** เขียน query, variables, auth และ headers ลง `.req.yaml`
 
 ## UI

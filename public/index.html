@@ -136,8 +136,24 @@
         <div class="kv-edit" id="reqHeaders"><button type="button" class="ghost small kv-add">+ Header</button></div>
         <div id="inheritedHeaders"></div>
       </div>
-      <div class="rpanel form-panel" id="rtab-scripts" hidden>
-        <div id="scriptsBody"></div>
+      <div class="rpanel scripts-panel" id="rtab-scripts" hidden>
+        <div class="sub-head"><span data-i18n>Pre-request</span><small data-i18n>Runs before sending — e.g. $req.headers.set("X-Id", "1")</small></div>
+        <div class="code-wrap script-wrap">
+          <pre class="hl" aria-hidden="true"><code id="preScriptHl"></code></pre>
+          <textarea id="preScript" spellcheck="false" autocomplete="off" data-i18n-aria="Pre-request script" aria-label="Pre-request script"></textarea>
+        </div>
+        <div class="sub-head"><span data-i18n>Post-response (tests)</span><small data-i18n>Runs after the response — $res.status, $res.json, $test(), $expect()</small></div>
+        <div class="snippets" id="snippets" role="toolbar" data-i18n-aria="Insert a snippet" aria-label="Insert a snippet">
+          <button type="button" class="ghost small" data-snippet="status" data-i18n>Status is 200</button>
+          <button type="button" class="ghost small" data-snippet="noErrors" data-i18n>No GraphQL errors</button>
+          <button type="button" class="ghost small" data-snippet="hasField" data-i18n>Field exists</button>
+          <button type="button" class="ghost small" data-snippet="time" data-i18n>Faster than 1 s</button>
+          <button type="button" class="ghost small" data-snippet="save" data-i18n>Save a value to a variable</button>
+        </div>
+        <div class="code-wrap script-wrap grow">
+          <pre class="hl" aria-hidden="true"><code id="postScriptHl"></code></pre>
+          <textarea id="postScript" spellcheck="false" autocomplete="off" data-i18n-aria="Post-response script" aria-label="Post-response script"></textarea>
+        </div>
       </div>
       <div class="flowview" id="flowView">
         <div class="pane-head">
