@@ -228,20 +228,12 @@ async function loadTree(pickFirst = true) {
   }
   $('projectName').textContent = state.tree.name;
   document.title = `${state.tree.name} — Hyperion API`;
-  const envs = $('envs');
-  envs.innerHTML = '';
   const saved = store.get(`env:${state.root}`);
-  const initial = state.tree.envs.find((e) => e.name === saved)?.name ?? state.tree.defaultEnv;
-  for (const e of state.tree.envs) {
-    const b = document.createElement('button');
-    b.role = 'radio';
-    b.textContent = e.title ?? e.name;
-    b.title = e.protected ? t('{name} — protected: a mutation must be confirmed before sending', { name: e.name }) : e.name;
-    b.className = e.protected ? 'protected' : '';
-    b.dataset.env = e.name;
-    b.onclick = () => selectEnv(e.name);
-    envs.append(b);
-  }
+  const hidden = hiddenEnvs();
+  // the saved env, unless it was hidden since; else the project's default, else the first one shown
+  const shown = state.tree.envs.filter((e) => !hidden.has(e.name));
+  const initial = [saved, state.tree.defaultEnv].find((n) => shown.some((e) => e.name === n)) ?? shown[0]?.name ?? state.tree.defaultEnv;
+  renderEnvs(initial);
   renderSide();
   await selectEnv(initial, false);
   if (!pickFirst && state.view === 'flow' && state.tree.flows?.some((f) => f.file === state.flowFile)) return openFlow(state.flowFile);
@@ -453,8 +445,19 @@ async function showSettings() {
   toggleMenu(false);
   const p = fontPrefs();
   const fontOptions = (list) => [{ value: '', label: t('Default') }, ...list.filter(fontInstalled).map((f) => ({ value: f, label: f, font: f }))]; // each name shown in its own font
-  await askForm({
+  const envList = state.tree?.envs ?? [];
+  const hidden = hiddenEnvs();
+  const result = await askForm({
     title: t('Settings'),
+    actions: {
+      addEnv: async (v) => {
+        const r = await api('/api/env/new', { name: v.newEnv });
+        await loadTree(false);
+        state.logs.push(`${new Date().toLocaleTimeString()}  ${t('Added env {env} ({file}) — set its URL with Edit env', { env: r.name, file: r.file })}`);
+        renderLog();
+        return { close: true, value: 'reopen' };
+      },
+    },
     fields: [
       { name: 'lang', label: t('Language'), type: 'seg', showLabel: true, value: lang, options: [{ value: 'en', label: 'English' }, { value: 'th', label: 'ไทย' }] },
       { name: 'theme', label: t('Theme'), type: 'select', value: currentTheme(), options: THEMES.map((th) => ({ value: th.id, label: th.name })) },
@@ -462,6 +465,14 @@ async function showSettings() {
       { name: 'uiSize', label: t('Text size'), type: 'seg', showLabel: true, value: p.uiSize, options: ['90', '100', '110', '125'].map((v) => ({ value: v, label: `${v}%` })) },
       { name: 'codeFont', label: t('Code font'), type: 'select', value: p.codeFont, options: fontOptions(CODE_FONTS) },
       { name: 'codeSize', label: t('Code size'), type: 'select', value: p.codeSize, options: ['11', '12', '13', '14', '15', '16', '18', '20'].map((v) => ({ value: v, label: `${v} px` })) },
+      // envs of the open project: tick = shown in the top bar; and a new env (localhost first when it is missing)
+      ...(envList.length
+        ? [
+            ...envList.map((e) => ({ name: `envShow_${e.name}`, type: 'check', label: t('Show env {env} in the top bar', { env: e.title ?? e.name }), value: !hidden.has(e.name) })),
+            { name: 'newEnv', label: t('Add an env'), value: envList.some((e) => e.name === 'localhost') ? '' : 'localhost', placeholder: 'localhost' },
+            { name: 'addEnv', label: t('Add env'), type: 'action' },
+          ]
+        : []),
     ],
     autosave: true, // one button: Close
     // fonts change as you pick them; a new language reloads the page
@@ -474,11 +485,21 @@ async function showSettings() {
       }
       applyFonts(next);
       if (form.elements.theme.value !== currentTheme()) applyTheme(form.elements.theme.value);
+      // env ticks: at least one stays shown
+      if (envList.length) {
+        const off = envList.filter((e) => !form.elements[`envShow_${e.name}`]?.checked).map((e) => e.name);
+        if (off.length === envList.length) form.elements[`envShow_${state.env.name}`].checked = true;
+        else {
+          store.set(`hiddenEnvs:${state.root}`, JSON.stringify(off));
+          renderEnvs();
+        }
+      }
       const l = form.elements.lang.value;
       if (l && l !== lang) setLang(l);
     },
     onSubmit: () => true,
   });
+  if (result === 'reopen') return showSettings(); // a new env: show it in the list
 }
 
 // closes from its own button / Esc / a click outside (the dialog's close event is not relied on)
@@ -1070,6 +1091,33 @@ async function splitFolder(col, folder) {
   const prefix = `${col.dir}/${folder}/`;
   if (state.req?.file.startsWith(prefix)) state.req.file = `${made.dir}/${state.req.file.slice(prefix.length)}`;
   await loadTree(false);
+}
+
+// envs hidden from the top bar (Settings), per project on this computer; the files stay
+function hiddenEnvs() {
+  try {
+    return new Set(JSON.parse(store.get(`hiddenEnvs:${state.root}`) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+// the env buttons; `keep` stays visible even when hidden (the env in use is never taken away mid-work)
+function renderEnvs(keep = state.env?.name) {
+  const hidden = hiddenEnvs();
+  const envs = $('envs');
+  envs.innerHTML = '';
+  for (const e of state.tree.envs) {
+    if (hidden.has(e.name) && e.name !== keep) continue;
+    const b = document.createElement('button');
+    b.role = 'radio';
+    b.textContent = e.title ?? e.name;
+    b.title = e.protected ? t('{name} — protected: a mutation must be confirmed before sending', { name: e.name }) : e.name;
+    b.className = e.protected ? 'protected' : '';
+    b.dataset.env = e.name;
+    b.setAttribute('aria-checked', String(e.name === state.env?.name));
+    b.onclick = () => selectEnv(e.name);
+    envs.append(b);
+  }
 }
 
 async function selectEnv(name, reload = true) {

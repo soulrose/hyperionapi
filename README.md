@@ -36,7 +36,8 @@ npm run shortcut        # Windows: puts a "Hyperion API" icon on the Desktop
 
 - Click the project name next to the logo → pick a recent project, **Open folder…** (paste the path of a folder with `hyperion.yaml`) or **New project…**
 - New projects are prefilled: name "My API" in a folder named after it under the projects folder (change the location with the `HYPERION_HOME` env var).
-- A new project gets envs `dev`, `test`, `prod`, `training` (prod is protected) and a `Main API` collection with an example request — set `GQL_URL` in `envs/*.env.yaml` and send.
+- A new project gets envs `localhost` (URL `http://localhost:8080/graphql`), `dev`, `test`, `prod`, `training` (prod is protected) and a `Main API` collection with an example request — set `GQL_URL` in `envs/*.env.yaml` and send.
+- **Settings → envs:** untick an env to hide it from the top bar (per project, on this computer; the env file stays). **Add env** creates another one (e.g. `localhost` in an older project) from the same template.
 - The list of projects is kept in `%USERPROFILE%\.hyperion\projects.json`; no project files are stored inside the Hyperion folder.
 
 ## Schema when an env hides introspection

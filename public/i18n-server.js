@@ -3,6 +3,8 @@
 // numbered in order of appearance in the English. More specific templates come first
 // so that, with first-match-wins lookup, they win over shorter variants.
 export const SERVER_TH = [
+  ["Env names use a-z, 0-9 and -", "ชื่อ env ใช้ได้แค่ a-z, 0-9 และ -"],
+  ["Env {0} already exists", "มี env {0} อยู่แล้ว"],
   ["Not a project export — it has no hyperion.yaml", "ไม่ใช่ไฟล์ export ของโปรเจกต์ — ไม่มี hyperion.yaml"],
   ["The folder is not empty: {0}", "โฟลเดอร์นี้มีไฟล์อยู่แล้ว: {0}"],
   ["Not a request or flow file: {0}", "ไม่ใช่ไฟล์ request หรือ flow: {0}"],

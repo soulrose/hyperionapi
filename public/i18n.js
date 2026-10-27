@@ -8,6 +8,11 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  // Settings: envs
+  "Show env {env} in the top bar": "แสดง env {env} ที่แถบบน",
+  "Add an env": "เพิ่ม env",
+  "Add env": "เพิ่ม env",
+  "Added env {env} ({file}) — set its URL with Edit env": "เพิ่ม env {env} แล้ว ({file}) — ตั้ง URL ได้ที่ แก้ env",
   // project export / import
   "Import project…": "นำเข้าโปรเจกต์…",
   "Export project": "Export โปรเจกต์",
