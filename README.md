@@ -139,7 +139,7 @@ Auth and headers work as for other requests: WebSocket / Socket.IO send them as 
 
 ## Export / import requests and flows
 
-- **Export** on a request or a flow saves one `<name>.hyperion.json` file (to Downloads): the request, or the flow with every request it runs, plus their collection / folder settings. Secrets are never included (`{{secret:…}}` references stay).
+- **Export** on a collection (hover its name) or a flow saves one `<name>.hyperion.json` file (to Downloads): every request in the collection, or the flow with every request it runs, plus their collection / folder settings. Secrets are never included (`{{secret:…}}` references stay).
 - **Import** in the Flows section (or drop the file on the Import dialog) brings it into the open project: missing collections are created, identical requests are skipped, and a request that differs from yours is saved next to it as `…-imported` with the flow pointed at it. Your own collection settings are never overwritten.
 
 ## Import from Postman

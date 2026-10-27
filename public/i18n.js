@@ -8,11 +8,11 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  "Save {name} (every request, its settings, no secrets) as a .hyperion.json file": "บันทึก {name} (ทุก request และตั้งค่า ไม่รวม secret) เป็นไฟล์ .hyperion.json",
   // export / import (*.hyperion.json)
   "Export": "Export",
-  "Save this request (with its collection settings, no secrets) as a .hyperion.json file": "บันทึก request นี้ (พร้อมตั้งค่าของ collection ไม่รวม secret) เป็นไฟล์ .hyperion.json",
   "Save this flow and every request it runs (no secrets) as a .hyperion.json file": "บันทึก flow นี้และทุก request ที่ใช้ (ไม่รวม secret) เป็นไฟล์ .hyperion.json",
-  "Import a flow or request from a .hyperion.json file": "นำเข้า flow หรือ request จากไฟล์ .hyperion.json",
+  "Import a flow or collection from a .hyperion.json file": "นำเข้า flow หรือ collection จากไฟล์ .hyperion.json",
   "Exported {name}: {n} files → your Downloads folder": "Export {name} แล้ว: {n} ไฟล์ → โฟลเดอร์ Downloads",
   "{n} flow": "flow {n} ตัว",
   "{n} new requests": "request ใหม่ {n} ตัว",

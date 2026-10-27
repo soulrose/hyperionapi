@@ -308,7 +308,7 @@ function renderSide() {
     // fold / unfold a collection (remembered per project); searching shows matches even in folded ones
     const folded = foldedCols().has(col.dir) && !q;
     g.className = `group${folded ? ' folded' : ''}`;
-    g.innerHTML = `<div class="group-head"><button class="col-fold" aria-expanded="${!folded}" title="${t('Collapse / expand {name}', { name: esc(col.name) })}"><h3 title="${esc(col.dir)}">${esc(col.name)}</h3><small>${reqs.length}</small></button><button class="icon-btn col-settings" title="${t('Name, type, URL, auth, headers and delete for {name}', { name: esc(col.name) })}">${t('Settings')}</button><button class="icon-btn col-add" title="${t('Add a request to {name}', { name: esc(col.name) })}">+ request</button></div>`;
+    g.innerHTML = `<div class="group-head"><button class="col-fold" aria-expanded="${!folded}" title="${t('Collapse / expand {name}', { name: esc(col.name) })}"><h3 title="${esc(col.dir)}">${esc(col.name)}</h3><small>${reqs.length}</small></button><button class="icon-btn col-settings" title="${t('Name, type, URL, auth, headers and delete for {name}', { name: esc(col.name) })}">${t('Settings')}</button><button class="icon-btn col-add" title="${t('Add a request to {name}', { name: esc(col.name) })}">+ request</button><button class="icon-btn col-export" title="${t('Save {name} (every request, its settings, no secrets) as a .hyperion.json file', { name: esc(col.name) })}">${t('Export')}</button></div>`;
     g.querySelector('.col-fold').onclick = () => {
       const set = foldedCols();
       set.has(col.dir) ? set.delete(col.dir) : set.add(col.dir);
@@ -317,6 +317,7 @@ function renderSide() {
     };
     g.querySelector('.col-settings').onclick = () => editCollection(col);
     g.querySelector('.col-add').onclick = () => newRequest(col);
+    g.querySelector('.col-export').onclick = () => exportFiles([col.dir], col.name);
     if (folded) {
       tree.append(g);
       continue;
@@ -1079,7 +1080,6 @@ async function openRequest(file) {
   $('save').textContent = t('Autosave');
   $('move').disabled = false;
   $('delReq').disabled = false;
-  $('exportReq').disabled = false;
   disarmDelete();
   $('sync').disabled = !isGql();
   const s = r.scripts ?? {};
@@ -2223,7 +2223,6 @@ bundlePick.onchange = async () => {
     alert(tr(err.message));
   }
 };
-$('exportReq').onclick = () => state.req && exportFiles([state.req.file], state.req.name);
 $('flowExport').onclick = () => state.flowFile && exportFiles([state.flowFile], state.flow?.name ?? $('flowName').textContent);
 const drop = $('drop');
 drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
@@ -2628,7 +2627,7 @@ function renderFlowList(q = '') {
   const flows = (state.tree.flows ?? []).filter((f) => !q || f.name.toLowerCase().includes(q));
   const g = document.createElement('div');
   g.className = 'group flows-group';
-  g.innerHTML = `<div class="group-head"><h3>Flows</h3><button class="icon-btn flow-import" title="${t('Import a flow or request from a .hyperion.json file')}">${t('Import')}</button><button class="icon-btn flow-new" title="${t('Create a new flow')}">+ Flow</button></div>` +
+  g.innerHTML = `<div class="group-head"><h3>Flows</h3><button class="icon-btn flow-import" title="${t('Import a flow or collection from a .hyperion.json file')}">${t('Import')}</button><button class="icon-btn flow-new" title="${t('Create a new flow')}">+ Flow</button></div>` +
     (flows.length ? '' : t('<p class="group-empty">No flows yet — <button>create the first flow</button></p>'));
   for (const f of flows) {
     const b = document.createElement('button');

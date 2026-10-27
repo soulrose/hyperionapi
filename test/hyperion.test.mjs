@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import YAML from 'yaml';
@@ -892,4 +892,16 @@ test('export / import: a flow with its requests as one *.hyperion.json; no secre
   const flow = YAML.parse(await readFile(path.join(c.root, r2.flows[0]), 'utf8'));
   assert.equal(flow.steps[0].request, 'collections/sample/patient/get-patient-imported.req.yaml');
   await assert.rejects(importBundle(c, { kind: 'HyperionExport', items: [{ path: '../evil.req.yaml', content: 'x' }] }));
+
+  // a whole collection: every request in it, plus its settings
+  const col = await exportBundle(a, ['collections/sample']);
+  assert.deepEqual(col.items.map((i) => i.path).filter((p) => p.endsWith('.req.yaml')).sort(), [
+    'collections/sample/patient/get-patient.req.yaml',
+    'collections/sample/patient/patient-allergies.req.yaml',
+    'collections/sample/pharmacy/create-prescription.req.yaml',
+  ]);
+  assert.ok(col.items.some((i) => i.path === 'collections/sample/_collection.yaml'));
+  const d = await mk('d');
+  await rm(path.join(d.root, 'collections', 'sample'), { recursive: true });
+  assert.equal((await importBundle(d, col)).requests.created.length, 3);
 });
