@@ -134,7 +134,9 @@ request แบบนี้เปิดค้างไว้ในแอป — �
 - env ที่ protected (prod): ในแอปรัน mutation ได้เลย; `hyperion flow run` บน CLI จะหยุดที่ mutation
 - เก็บเป็น `flows/<ชื่อ>.flow.yaml` และรันบน CI ได้: `hyperion flow run flows/x.flow.yaml --env test --reporter junit`
 
-## Export / import request และ flow
+## Export / import
+
+- **ทั้งโปรเจกต์:** เมนูชื่อโปรเจกต์ → **Export โปรเจกต์** บันทึก `<ชื่อโปรเจกต์>.hyperion.json` มี `hyperion.yaml`, ไฟล์ env, ทุก collection, request และ flow · **นำเข้าโปรเจกต์…** สร้างเป็นโฟลเดอร์ใหม่ (ใส่ที่ตั้งให้ในโฟลเดอร์โปรเจกต์) แล้วเปิดให้ · ไม่รวม secret (`secrets.local.yaml`) และ token ที่เก็บไว้ (`envs/*.local.env.yaml`) — ใส่ใหม่ในเครื่องปลายทาง
 
 - ปุ่ม **Export** ที่ collection (ชี้ที่ชื่อ collection) หรือที่ flow บันทึกเป็นไฟล์เดียว `<ชื่อ>.hyperion.json` (ลงโฟลเดอร์ Downloads): ทุก request ใน collection หรือ flow พร้อมทุก request ที่ใช้ รวมตั้งค่าของ collection / โฟลเดอร์ · ไม่รวม secret (เก็บไว้เป็น `{{secret:…}}`)
 - ปุ่ม **Import** ในส่วน Flows (หรือลากไฟล์ใส่หน้าต่าง Import) นำเข้าโปรเจกต์ที่เปิดอยู่: collection ที่ยังไม่มีจะถูกสร้าง, request ที่เหมือนเดิมข้ามไป, request ที่ต่างจากของเดิมบันทึกแยกเป็น `…-imported` และ flow ชี้ไปที่ตัวใหม่ · ตั้งค่า collection เดิมของคุณไม่ถูกทับ

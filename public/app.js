@@ -360,7 +360,7 @@ async function renderProjects() {
   if (!p.current) $('projectName').textContent = t('No project open');
   const item = (pr) => `<button role="menuitem" data-root="${esc(pr.root)}"${pr.root === p.current ? ' aria-current="true"' : ''}><span>${esc(pr.name)}</span><small>${esc(pr.root)}</small></button>`;
   $('projectMenu').innerHTML = list.map(item).join('') + (list.length ? '<hr>' : '') +
-    `<button role="menuitem" data-act="open"><span>${t('Open folder…')}</span></button><button role="menuitem" data-act="new"><span>${t('New project…')}</span></button><hr><button role="menuitem" data-act="settings"><span>${t('Settings')}</span></button><button role="menuitem" data-act="about"><span>${t('About Hyperion')}</span></button>`;
+    `<button role="menuitem" data-act="open"><span>${t('Open folder…')}</span></button><button role="menuitem" data-act="new"><span>${t('New project…')}</span></button><button role="menuitem" data-act="importProject"><span>${t('Import project…')}</span></button>${p.current ? `<button role="menuitem" data-act="exportProject"><span>${t('Export project')}</span></button>` : ''}<hr><button role="menuitem" data-act="settings"><span>${t('Settings')}</span></button><button role="menuitem" data-act="about"><span>${t('About Hyperion')}</span></button>`;
   $('recent').innerHTML = p.projects.map((pr) => `<li>${item(pr)}</li>`).join('');
 }
 
@@ -369,6 +369,42 @@ function toggleMenu(open = $('projectMenu').hidden) {
   $('projectBtn').setAttribute('aria-expanded', String(open));
   if (open) $('projectMenu').querySelector('button')?.focus();
 }
+
+// ---------- whole project: export to one *.hyperion.json / import it into a new folder ----------
+async function exportProject() {
+  toggleMenu(false);
+  const bundle = await api('/api/project/export');
+  saveAs(fileName(bundle.project), bundle);
+  state.logs.push(`${new Date().toLocaleTimeString()}  ${t('Exported project {name}: {n} files → your Downloads folder (no secrets or tokens)', { name: bundle.project, n: bundle.items.length })}`);
+  renderLog();
+}
+const projectPick = Object.assign(document.createElement('input'), { type: 'file', accept: '.json,application/json', hidden: true });
+document.body.append(projectPick);
+projectPick.onchange = async () => {
+  const f = projectPick.files[0];
+  projectPick.value = '';
+  toggleMenu(false);
+  if (!f) return;
+  let bundle;
+  try {
+    bundle = JSON.parse(await f.text());
+  } catch {
+    return alert(t('Not a Hyperion export file (*.hyperion.json)'));
+  }
+  const { home = '', sep = '\\' } = state.projects ?? {};
+  const name = bundle.project ?? f.name.replace(/\.hyperion\.json$|\.json$/i, '');
+  const r = await askForm({
+    title: t('Import project'),
+    desc: t('{name}: {n} files — secrets and tokens are not in the file; put them in on this computer afterwards', { name, n: bundle.items?.length ?? 0 }),
+    fields: [{ name: 'root', label: t('New folder'), value: `${home}${sep}${folderName(name)}`, required: true }],
+    submit: t('Import'),
+    onSubmit: (v) => api('/api/project/import', { root: v.root, bundle }),
+  });
+  if (!r) return;
+  state.req = null;
+  state.result = null;
+  await loadTree();
+};
 
 async function showAbout() {
   toggleMenu(false);
@@ -509,6 +545,8 @@ const onProjectClick = (e) => {
   else if (b.dataset.act === 'open') openFolder();
   else if (b.dataset.act === 'new') newProject();
   else if (b.dataset.act === 'settings') showSettings();
+  else if (b.dataset.act === 'exportProject') exportProject();
+  else if (b.dataset.act === 'importProject') projectPick.click();
   else if (b.dataset.act === 'about') showAbout();
 };
 $('projectMenu').addEventListener('click', onProjectClick);

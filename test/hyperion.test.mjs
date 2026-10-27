@@ -905,3 +905,24 @@ test('export / import: a flow with its requests as one *.hyperion.json; no secre
   await rm(path.join(d.root, 'collections', 'sample'), { recursive: true });
   assert.equal((await importBundle(d, col)).requests.created.length, 3);
 });
+
+test('project export / import: everything but secrets and local tokens, into a new folder', async () => {
+  const { exportProject, importProject } = await import('../lib/bundle.mjs');
+  const src = await mkdtemp(path.join(tmpdir(), 'hyperion-proj-a-'));
+  await writeSample(src, { prodUrl: 'http://prod.example', devUrl: 'http://dev.example' });
+  await writeFile(path.join(src, 'envs', 'dev.local.env.yaml'), 'variables:\n  ACCESS_TOKEN: tok-123\n');
+  const bundle = await exportProject(await loadProject(src));
+  const paths = bundle.items.map((i) => i.path);
+  assert.ok(paths.includes('hyperion.yaml') && paths.includes('envs/dev.env.yaml') && paths.includes('collections/sample/_collection.yaml'));
+  assert.ok(!paths.some((p) => p === 'secrets.local.yaml' || p.includes('.local.env.yaml') || p.startsWith('.hyperion')));
+  assert.ok(!JSON.stringify(bundle).includes('tok-123') && !JSON.stringify(bundle).includes('dev-key'));
+  assert.equal(bundle.project, 'Demo (mock API)');
+
+  const dest = path.join(await mkdtemp(path.join(tmpdir(), 'hyperion-proj-b-')), 'copy');
+  const r = await importProject(dest, bundle);
+  assert.equal(r.files, bundle.items.length);
+  const p = await loadProject(dest);
+  assert.equal(p.config.name, 'Demo (mock API)');
+  assert.ok((await readFile(path.join(dest, 'collections/sample/patient/get-patient.req.yaml'), 'utf8')).includes('GetPatient'));
+  await assert.rejects(importProject(dest, bundle), /not empty/);
+});

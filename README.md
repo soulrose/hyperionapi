@@ -137,7 +137,9 @@ Auth and headers work as for other requests: WebSocket / Socket.IO send them as 
 - Protected envs (prod): the app runs mutations; `hyperion flow run` on the CLI stops at a mutation.
 - Stored as `flows/<name>.flow.yaml`; run them in CI: `hyperion flow run flows/x.flow.yaml --env test --reporter junit`
 
-## Export / import requests and flows
+## Export / import
+
+- **Whole project:** project menu → **Export project** saves `<project>.hyperion.json` with `hyperion.yaml`, the env files, every collection, request and flow. **Import project…** creates it in a new folder (prefilled under the projects folder) and opens it. Secrets (`secrets.local.yaml`) and saved tokens (`envs/*.local.env.yaml`) are never in the file — put them in on the other computer.
 
 - **Export** on a collection (hover its name) or a flow saves one `<name>.hyperion.json` file (to Downloads): every request in the collection, or the flow with every request it runs, plus their collection / folder settings. Secrets are never included (`{{secret:…}}` references stay).
 - **Import** in the Flows section (or drop the file on the Import dialog) brings it into the open project: missing collections are created, identical requests are skipped, and a request that differs from yours is saved next to it as `…-imported` with the flow pointed at it. Your own collection settings are never overwritten.
@@ -195,7 +197,7 @@ Variable precedence (low → high): `hyperion.yaml` < collection / folder / requ
 npm test
 ```
 
-28 tests: schema fallback (including borrowing dev's schema), request-level and per-env auth, the schema explorer, flows, cURL paste, token renewal / 401 retry / single flight, Keycloak, schema drift, the prod guard, Postman import, the pm shim, creating / moving / splitting collections, WebSocket / Socket.IO / gRPC, REST hosts as env variables, scripts written in the app, SOAP (WSDL import, 1.1 / 1.2, faults), and export / import of flows with their requests.
+29 tests: schema fallback (including borrowing dev's schema), request-level and per-env auth, the schema explorer, flows, cURL paste, token renewal / 401 retry / single flight, Keycloak, schema drift, the prod guard, Postman import, the pm shim, creating / moving / splitting collections, WebSocket / Socket.IO / gRPC, REST hosts as env variables, scripts written in the app, SOAP (WSDL import, 1.1 / 1.2, faults), and export / import of flows with their requests.
 
 ## About
 

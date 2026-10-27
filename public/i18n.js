@@ -8,6 +8,14 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  // project export / import
+  "Import project…": "นำเข้าโปรเจกต์…",
+  "Export project": "Export โปรเจกต์",
+  "Import project": "นำเข้าโปรเจกต์",
+  "New folder": "โฟลเดอร์ใหม่",
+  "Exported project {name}: {n} files → your Downloads folder (no secrets or tokens)": "Export โปรเจกต์ {name} แล้ว: {n} ไฟล์ → โฟลเดอร์ Downloads (ไม่รวม secret และ token)",
+  "{name}: {n} files — secrets and tokens are not in the file; put them in on this computer afterwards": "{name}: {n} ไฟล์ — ในไฟล์ไม่มี secret และ token ใส่ในเครื่องนี้ทีหลัง",
+  "Not a Hyperion export file (*.hyperion.json)": "ไม่ใช่ไฟล์ export ของ Hyperion (*.hyperion.json)",
   "Save {name} (every request, its settings, no secrets) as a .hyperion.json file": "บันทึก {name} (ทุก request และตั้งค่า ไม่รวม secret) เป็นไฟล์ .hyperion.json",
   // export / import (*.hyperion.json)
   "Export": "Export",
