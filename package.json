@@ -1,0 +1,21 @@
+{
+  "name": "hyperion-api",
+  "version": "0.1.0",
+  "description": "Git-native GraphQL/REST runner with dual-plane schema discovery (schema from Dev, execute on Prod)",
+  "type": "module",
+  "bin": {
+    "hyperion": "bin/hyperion.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.6",
+    "@grpc/proto-loader": "^0.8.1",
+    "graphql": "^16.11.0",
+    "yaml": "^2.9.1"
+  }
+}

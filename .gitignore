@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# demo project (rebuilt on every start-demo.bat) and logs
+.demo/
+*.log
+
+# anything a project keeps locally: tokens, passwords, caches (when a project folder is opened inside this repo)
+.hyperion/
+*.local.env.yaml
+secrets.local.yaml
+.env
+.env.*
+
+# design notes written against an internal system
+docs/design-v3.1.md
+
+# editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
