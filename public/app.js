@@ -2024,10 +2024,36 @@ $('importBtn').onclick = () => {
   $('importLog').innerHTML = '';
   // paste target: the collection of the open request, else the first one
   const current = state.tree.requests.find((r) => r.file === state.req?.file)?.collectionDir;
-  $('pasteCollection').innerHTML = (state.tree.collections ?? []).map((c) => `<option value="${esc(c.dir)}"${c.dir === current ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+  fillPasteCollections(current);
   fillWsdlCollections(current);
   $('importDlg').showModal();
 };
+
+// paste target: the collections that fit what is pasted — a GraphQL query (or a cURL sending one) → GraphQL
+// collections, any other cURL → REST collections; nothing pasted yet → both, grouped
+function pastedKind(text) {
+  if (!text.trim()) return null;
+  if (/^\s*(query|mutation|subscription|fragment)\b|^\s*\{/.test(text) || /\\?"query\\?"\s*:/.test(text)) return 'graphql';
+  return /^\s*curl\b/i.test(text) ? 'rest' : 'graphql';
+}
+function fillPasteCollections(prefer) {
+  const sel = $('pasteCollection');
+  const keep = prefer ?? sel.value;
+  const kind = pastedKind($('pasteText').value);
+  const cols = state.tree.collections ?? [];
+  const opt = (c) => `<option value="${esc(c.dir)}"${c.dir === keep ? ' selected' : ''}>${esc(c.name)}</option>`;
+  const of = (k) => cols.filter((c) => colType(c) === k);
+  sel.innerHTML = kind
+    ? (of(kind).length ? of(kind) : cols).map(opt).join('') // none of that kind yet: every collection
+    : ['graphql', 'rest'].filter((k) => of(k).length).map((k) => `<optgroup label="${esc(SECTION_LABEL[k])}">${of(k).map(opt).join('')}</optgroup>`).join('');
+}
+$('pasteText').addEventListener('input', () => {
+  const kind = pastedKind($('pasteText').value);
+  if (kind !== $('pasteText').dataset.kind) {
+    $('pasteText').dataset.kind = kind ?? '';
+    fillPasteCollections();
+  }
+});
 
 // ---------- import a WSDL: one SoapRequest per operation ----------
 const NEW_SOAP_COL = ':new-soap'; // not a collection dir (those never start with ":")
