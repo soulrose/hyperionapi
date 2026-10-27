@@ -57,6 +57,20 @@ export const SERVER_TH = [
   // lib/runner.mjs
   ['{0} is a persistent connection — open it in the app and press Connect (not supported in flow / hyperion run)', '{0} เป็นการเชื่อมต่อค้างไว้ — เปิดในแอปแล้วกด Connect (ใช้ใน flow / hyperion run ไม่ได้)'],
 
+  ['SOAP Fault: {0} — {1}', 'SOAP Fault: {0} — {1}'],
+
+  // lib/wsdl.mjs
+  ['Enter the WSDL URL or file path first', 'ใส่ URL หรือ path ของไฟล์ WSDL ก่อน'],
+  ['Could not load WSDL {0}: HTTP {1}', 'โหลด WSDL {0} ไม่ได้: HTTP {1}'],
+  ['Could not load WSDL {0}: file not found', 'โหลด WSDL {0} ไม่ได้: ไม่พบไฟล์'],
+  ['Could not load WSDL {0}: empty document', 'โหลด WSDL {0} ไม่ได้: เอกสารว่าง'],
+  ['Could not load WSDL {0}: not an XML schema (root element is <{1}>)', 'โหลด WSDL {0} ไม่ได้: ไม่ใช่ XML schema (root element คือ <{1}>)'],
+  ['Could not load WSDL {0}: {1}', 'โหลด WSDL {0} ไม่ได้: {1}'],
+  ['Schema not loaded (nested too deep): {0}', 'ไม่ได้โหลด schema (ซ้อนลึกเกินไป): {0}'],
+  ["WSDL 2.0 is not supported — use the service's WSDL 1.1 (often ?wsdl instead of ?wsdl2)", 'ยังไม่รองรับ WSDL 2.0 — ใช้ WSDL 1.1 ของ service (มักเป็น ?wsdl แทน ?wsdl2)'],
+  ['Not a WSDL: the root element is <{0}>', 'ไม่ใช่ WSDL: root element คือ <{0}>'],
+  ['No SOAP service found in the WSDL', 'ไม่พบ SOAP service ใน WSDL'],
+
   // lib/server.mjs
   ['hyperion.yaml not found in {0} — use "New project" instead', 'ไม่พบ hyperion.yaml ใน {0} — ใช้ "สร้างโปรเจกต์ใหม่" แทน'],
   ['Enter the folder path', 'ใส่ path ของโฟลเดอร์'],

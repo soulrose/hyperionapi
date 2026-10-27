@@ -31,8 +31,8 @@ const HELP = `hyperion — schema from Dev, execute on Prod
   hyperion token <status|refresh|clear> <collectionDir> [--env]
   hyperion import <postman.json>... [--project dir]     Postman collection / environment
   hyperion import --postman-desktop [--env dev] [--project dir]   GraphQL requests straight from the Postman app
-  hyperion new collection "<name>" [--url U] [--from collections/x] [--project dir]
-  hyperion new request <collectionDir> "<name>" [--folder f] [--rest --method GET --url U]
+  hyperion new collection "<name>" [--url U] [--from collections/x] [--soap] [--project dir]
+  hyperion new request <collectionDir> "<name>" [--folder f] [--rest --method GET --url U | --soap]
   hyperion move <file.req.yaml> <collectionDir> [--folder f]     move a request to another collection
   hyperion split <folderDir> ["<new collection name>"]          turn a folder into its own collection
   hyperion serve [dir] [--port 4321] [--open]           web UI (no dir = last project; switch projects in the UI)
@@ -64,6 +64,7 @@ const { values: o, positionals } = parseArgs({
     from: { type: 'string' },
     folder: { type: 'string' },
     rest: { type: 'boolean' },
+    soap: { type: 'boolean' },
     method: { type: 'string' },
     help: { type: 'boolean', short: 'h' },
   },
@@ -102,12 +103,12 @@ async function main() {
     const { createCollection, createRequest } = await import('../lib/scaffold.mjs');
     const project = await loadProject(o.project ?? process.cwd());
     if (args[0] === 'collection') {
-      const c = await createCollection(project, { name: args[1], url: o.url, from: o.from });
+      const c = await createCollection(project, { name: args[1], url: o.url, from: o.from, type: o.soap ? 'soap' : undefined });
       return log(`✔ collection "${c.name}" → ${c.dir}/_collection.yaml`);
     }
     if (args[0] === 'request') {
       const colDir = path.relative(project.root, path.resolve(args[1] ?? ''));
-      const file = await createRequest(project, { collection: colDir, name: args[2], folder: o.folder, kind: o.rest ? 'HttpRequest' : 'GraphQLRequest', method: o.method, url: o.url });
+      const file = await createRequest(project, { collection: colDir, name: args[2], folder: o.folder, kind: o.rest ? 'HttpRequest' : o.soap ? 'SoapRequest' : 'GraphQLRequest', method: o.method, url: o.url });
       return log(`✔ ${file}`);
     }
     throw new Error('new: use "new collection <name>" or "new request <collectionDir> <name>"');

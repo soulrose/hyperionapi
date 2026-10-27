@@ -115,6 +115,17 @@ Auth และ Headers ใช้แบบเดียวกับ request อื
 request แบบนี้เปิดค้างไว้ในแอป — ใช้ใน flow / `hyperion run` ไม่ได้
 ลองได้ใน `start-demo.bat`: collection **Live (WebSocket)** และ **Echo (gRPC)** ต่อกับ mock ในเครื่อง
 
+## SOAP
+
+**+ Collection** → ชนิด **SOAP** (URL เริ่มต้น `{{SOAP_URL}}`) หรือ **Import** → "From a WSDL (SOAP)": วาง URL หรือ path ของ WSDL แล้วเลือก collection (หรือสร้าง SOAP collection ใหม่ ตั้งชื่อตาม service ให้) — ทุก operation กลายเป็น request พร้อม envelope ตัวอย่าง (`<!-- optional -->`, `<!-- repeatable -->`, `<!-- choice -->` บอกกฎจาก WSDL) และตั้ง `SOAP_URL` ของ env ให้ถ้ายังว่าง
+
+- ช่อง editor (แท็บ **Envelope**) คือ XML ที่ส่ง ใช้ `{{ตัวแปร}}` ของ env ได้ · แถบ SOAP: เวอร์ชัน **1.1 / 1.2**, **SOAPAction**, **WSDL** + **Load**, **Operation**, **Sample envelope** (ถามก่อนทับ envelope ที่แก้ไว้)
+- 1.1 ส่ง `Content-Type: text/xml` + `SOAPAction` · 1.2 ส่ง `application/soap+xml; action=…` · auth และ headers ใช้แบบเดียวกับ request อื่น (header ที่ตั้งเองชนะ)
+- คำตอบที่เป็น XML จัดหน้าและมีสีให้ (ทุกชนิด request) · SOAP Fault ขึ้นแถบแดงพร้อม code และข้อความ · ข้อมูลผู้ป่วยใน XML ถูกซ่อนเหมือน JSON
+- Tests: `$res.xml("Tag")` อ่านค่า element แรกที่ชื่อนี้ (ไม่สน prefix), `$res.xmlAll("Tag")` ทุกตัว · ปุ่มตัวอย่าง **No SOAP Fault**, **Read a value**
+- รองรับ WSDL 1.1 (document/literal และ rpc) และตาม WSDL / XSD ที่ import ต่อไปได้หลายชั้น · ไม่รองรับ: WSDL 2.0, WS-Security, ไฟล์แนบ MTOM
+- env ที่ protected: CLI จะให้ใส่ `--confirm` ก่อนยิง operation ที่ชื่อดูเหมือนการเขียนข้อมูล (create, add, update, save, delete, cancel, submit, book, …)
+
 ## Flows (แบบ Postman Flows)
 
 - sidebar ส่วน **Flows** → **+ Flow** → **+ Block** เลือก request จาก collection ไหนก็ได้ → **Run** (Ctrl+Enter)

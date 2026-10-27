@@ -72,6 +72,88 @@ function hlJS(src) {
   return out + esc(src.slice(last)) + '\n';
 }
 
+// XML (SOAP envelopes, XML responses): tags, attributes, attribute values, text, comments, {{variables}}
+const XMLRE = /(<!--[\s\S]*?(?:-->|$))|(<!\[CDATA\[[\s\S]*?(?:\]\]>|$))|(<[?!][^<>]*>?)|(<\/?)([\w:.-]+)([^<>]*?)(\/?>)|(\{\{[^}]*\}\})|(&#?\w+;)/g;
+const ATTRRE = /([\w:.-]+)(\s*=\s*)("[^"]*"?|'[^']*'?)/g;
+const tplIn = (s) => esc(s).replace(/\{\{[^}]*\}\}/g, (m) => `<span class="t-tpl">${m}</span>`);
+function hlAttrs(src) {
+  let out = '';
+  let last = 0;
+  for (const m of src.matchAll(ATTRRE)) {
+    out += esc(src.slice(last, m.index));
+    out += `<span class="t-attr">${esc(m[1])}</span>${esc(m[2])}<span class="t-str">${tplIn(m[3])}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(src.slice(last));
+}
+function hlXML(src) {
+  let out = '';
+  let last = 0;
+  for (const m of src.matchAll(XMLRE)) {
+    out += esc(src.slice(last, m.index));
+    const [all, com, cdata, decl, open, name, attrs, close, tpl, ent] = m;
+    if (com) out += `<span class="t-com">${esc(com)}</span>`;
+    else if (cdata) out += `<span class="t-str">${tplIn(cdata)}</span>`;
+    else if (decl) out += `<span class="t-cmt">${esc(decl)}</span>`;
+    else if (name) out += `<span class="t-punc">${esc(open)}</span><span class="t-tag">${esc(name)}</span>${hlAttrs(attrs)}<span class="t-punc">${esc(close)}</span>`;
+    else if (tpl) out += `<span class="t-tpl">${esc(tpl)}</span>`;
+    else if (ent) out += `<span class="t-num">${esc(ent)}</span>`;
+    last = m.index + all.length;
+  }
+  return out + esc(src.slice(last)) + '\n';
+}
+
+// a response body that is XML: by its Content-Type, else by how it starts (never HTML pages)
+function isXmlBody(text, headers = {}) {
+  if (typeof text !== 'string' || !text.trim() || text.length > 2_000_000) return false;
+  const ct = Object.entries(headers).find(([k]) => k.toLowerCase() === 'content-type')?.[1] ?? '';
+  if (/html/i.test(ct)) return false;
+  if (/xml/i.test(ct)) return /^\s*</.test(text);
+  return /^\s*<(\?xml\b|[\w.-]+:Envelope\b)/.test(text);
+}
+
+// one element per line, an element holding only text stays on one line; whitespace-only text is dropped
+function prettyXML(src) {
+  const tokens = src.match(/<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<[^>]+>|[^<]+/g) ?? [];
+  const isOpen = (s) => /^<[^/!?]/.test(s) && !/\/>$/.test(s);
+  const isClose = (s) => /^<\//.test(s);
+  const isText = (s) => !s.startsWith('<') || s.startsWith('<![CDATA[');
+  const lines = [];
+  let depth = 0;
+  const pad = () => '  '.repeat(Math.max(depth, 0));
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (isText(tok) && !tok.trim()) continue;
+    if (isClose(tok)) {
+      depth--;
+      lines.push(pad() + tok);
+    } else if (isOpen(tok)) {
+      const next = tokens[i + 1];
+      const after = tokens[i + 2];
+      if (next && isClose(next)) {
+        lines.push(pad() + tok + next); // <a></a>
+        i += 1;
+      } else if (next && isText(next) && after && isClose(after)) {
+        lines.push(pad() + tok + next.trim() + after); // <a>text</a>
+        i += 2;
+      } else {
+        lines.push(pad() + tok);
+        depth++;
+      }
+    } else lines.push(pad() + tok.trim());
+  }
+  return lines.join('\n');
+}
+
+// personal data in XML: the text of an element whose local name is a masked field (same rule as JSON)
+function maskXML(text, fields) {
+  if (!fields?.length) return text;
+  const set = new Set(fields.map((f) => f.toLowerCase()));
+  return text.replace(/<((?:[\w.-]+:)?([\w.-]+))(\s[^<>]*)?>([^<]+)<\/\1\s*>/g, (all, tag, local, attrs = '', value) =>
+    set.has(local.toLowerCase()) && value.trim() ? `<${tag}${attrs}>${[...value].map((c, i) => (i === 0 || c === ' ' ? c : '●')).join('')}</${tag}>` : all,
+  );
+}
+
 function bindEditor(textarea, code, hl) {
   const pre = code.parentElement;
   const paint = () => { code.innerHTML = hl(textarea.value); };
@@ -97,8 +179,10 @@ function insertText(ta, text, caretBack = 0) {
 const RT = { WebSocketRequest: 'WebSocket', SocketIORequest: 'Socket.IO', GrpcRequest: 'gRPC' };
 const isRt = (kind = state.req?.kind) => !!RT[kind];
 const isGql = () => state.req?.kind === 'GraphQLRequest' || (state.req && !state.req.kind);
+// SOAP: the editor holds the XML envelope, the SOAP bar the version / SOAPAction / WSDL operation
+const isSoap = (kind = state.req?.kind) => kind === 'SoapRequest';
 
-const paintQuery = bindEditor($('query'), $('queryHl'), (s) => (isRt() ? hlJSON(s) : hlGraphQL(s)));
+const paintQuery = bindEditor($('query'), $('queryHl'), (s) => (isSoap() ? hlXML(s) : isRt() ? hlJSON(s) : hlGraphQL(s)));
 const paintVars = bindEditor($('vars'), $('varsHl'), hlJSON);
 const paintPre = bindEditor($('preScript'), $('preScriptHl'), hlJS);
 const paintPost = bindEditor($('postScript'), $('postScriptHl'), hlJS);
@@ -176,19 +260,20 @@ const foldedCols = () => {
 };
 
 /**
- * graphql | rest | grpc | websocket: what _collection.yaml says, else what its requests are
- * (all REST → rest, all gRPC → grpc, all WebSocket / Socket.IO → websocket).
+ * graphql | rest | soap | grpc | websocket: what _collection.yaml says, else what its requests are
+ * (all REST → rest, all SOAP → soap, all gRPC → grpc, all WebSocket / Socket.IO → websocket).
  */
 function colType(col) {
   if (SECTIONS.includes(col.type)) return col.type;
   const kinds = state.tree.requests.filter((r) => r.collectionDir === col.dir).map((r) => r.kind);
   const all = (...ks) => kinds.length && kinds.every((k) => ks.includes(k));
   if (all('GrpcRequest')) return 'grpc';
+  if (all('SoapRequest')) return 'soap';
   if (all('WebSocketRequest', 'SocketIORequest', 'GrpcRequest') || col.type === 'realtime') return 'websocket';
   return all('HttpRequest') ? 'rest' : 'graphql';
 }
-const SECTIONS = ['graphql', 'rest', 'grpc', 'websocket'];
-const SECTION_LABEL = { graphql: 'GraphQL', rest: 'REST', grpc: 'gRPC', websocket: 'WebSocket' };
+const SECTIONS = ['graphql', 'rest', 'soap', 'grpc', 'websocket'];
+const SECTION_LABEL = { graphql: 'GraphQL', rest: 'REST', soap: 'SOAP', grpc: 'gRPC', websocket: 'WebSocket' };
 const COL_TYPES = SECTIONS.map((value) => ({ value, label: SECTION_LABEL[value] }));
 // request kinds a new request can be in each collection type
 const KINDS_OF = {
@@ -196,6 +281,7 @@ const KINDS_OF = {
   rest: [['HttpRequest', 'REST'], ['GraphQLRequest', 'GraphQL']],
   grpc: [['GrpcRequest', 'gRPC']],
   websocket: [['WebSocketRequest', 'WebSocket'], ['SocketIORequest', 'Socket.IO']],
+  soap: [['SoapRequest', 'SOAP']],
 };
 
 function renderSide() {
@@ -253,7 +339,8 @@ function renderSide() {
       const b = document.createElement('button');
       b.className = 'req';
       b.dataset.file = r.file;
-      b.innerHTML = `<span class="op ${esc(r.op)}${RT[r.kind] ? ' rt' : ''}">${esc(r.op === 'mutation' ? 'mut' : r.op === 'query' ? 'qry' : r.op)}</span><span>${esc(r.name)}</span>`;
+      const op = isSoap(r.kind) ? 'SOAP' : r.op;
+      b.innerHTML = `<span class="op ${esc(op)}${RT[r.kind] ? ' rt' : ''}">${esc(op === 'mutation' ? 'mut' : op === 'query' ? 'qry' : op)}</span><span>${esc(r.name)}</span>`;
       b.onclick = () => openRequest(r.file);
       if (state.req?.file === r.file) b.setAttribute('aria-current', 'true');
       g.append(b);
@@ -956,7 +1043,7 @@ async function openRequest(file) {
   for (const b of document.querySelectorAll('.req')) b.toggleAttribute('aria-current', b.dataset.file === file);
   for (const b of document.querySelectorAll('.req[aria-current]')) b.setAttribute('aria-current', 'true');
   $('reqName').textContent = r.name;
-  const op = r.kind === 'HttpRequest' ? r.method : RT[r.kind] ?? r.op;
+  const op = r.kind === 'HttpRequest' ? r.method : isSoap(r.kind) ? 'SOAP' : RT[r.kind] ?? r.op;
   $('opBadge').hidden = !op;
   $('opBadge').className = `op ${op}${RT[r.kind] ? ' rt' : ''}`;
   $('opBadge').textContent = op === 'mutation' ? 'mutation' : op === 'query' ? 'query' : op;
@@ -971,9 +1058,13 @@ async function openRequest(file) {
   $('execUrl').title = v ? t('{name} value of env {envTitle} — saved automatically when edited', { name: v.name, envTitle }) : t('URL of this request — saved automatically when edited');
   paintUrlSrc();
   $('execUrl').classList.toggle('unset', !!placeholderUrl);
-  $('query').value = r.kind === 'HttpRequest' ? JSON.stringify(r.body ?? null, null, 2) : RT[r.kind] ? r.rt?.message ?? '' : r.query;
+  $('query').value = r.kind === 'HttpRequest' ? JSON.stringify(r.body ?? null, null, 2) : isSoap(r.kind) ? r.soap?.envelope ?? '' : RT[r.kind] ? r.rt?.message ?? '' : r.query;
+  $('query').setAttribute('aria-label', isSoap(r.kind) ? t('SOAP envelope') : 'GraphQL query');
+  $('qTab').textContent = isSoap(r.kind) ? t('Envelope') : 'Query';
   $('vars').value = JSON.stringify(r.variables ?? {}, null, 2);
   fillRt(r);
+  fillSoap(r);
+  showSnippets();
   paintQuery();
   paintVars();
   $('send').disabled = false;
@@ -999,7 +1090,7 @@ async function openRequest(file) {
 
 async function refreshSchema() {
   if (!state.req || !isGql()) {
-    $('schemaStatus').textContent = isRt() ? t('{kind} — no GraphQL schema', { kind: RT[state.req.kind] }) : t('REST request — no schema');
+    $('schemaStatus').textContent = isRt() ? t('{kind} — no GraphQL schema', { kind: RT[state.req.kind] }) : isSoap() ? t('SOAP request — operations come from the WSDL') : t('REST request — no schema');
     return;
   }
   const { meta } = await api(`/api/schema?file=${encodeURIComponent(state.req.file)}&env=${encodeURIComponent(state.env.name)}`);
@@ -1326,6 +1417,121 @@ $('rtExample').onclick = () => {
   $('query').dispatchEvent(new Event('input'));
 };
 
+// ---------- SOAP: version, SOAPAction, WSDL operations (the editor is the envelope) ----------
+let soapInfo = null; // services of the loaded WSDL: [{ name, ports: [{ name, address, soapVersion, operations: [{ name, action, envelope }] }] }]
+
+const soapVersion = () => document.querySelector('input[name=soapVersion]:checked')?.value ?? '1.1';
+function setSoapVersion(v) {
+  for (const r of document.querySelectorAll('input[name=soapVersion]')) r.checked = r.value === (v === '1.2' ? '1.2' : '1.1');
+}
+function soapHint(text = '', bad = false) {
+  $('soapHint').textContent = text;
+  $('soapHint').classList.toggle('bad', bad);
+}
+
+function fillSoap(r) {
+  const on = isSoap(r.kind);
+  document.body.classList.toggle('soap-mode', on);
+  $('soapBar').hidden = !on;
+  soapInfo = null;
+  if (!on) return;
+  const s = r.soap ?? {};
+  setSoapVersion(s.soapVersion);
+  $('soapAction').value = s.action ?? '';
+  $('soapWsdl').value = s.wsdl ?? '';
+  // until the WSDL is loaded the list holds just the saved operation
+  $('soapOp').innerHTML = s.operation ? `<option value="${esc(s.operation)}" data-name="${esc(s.operation)}">${esc(s.operation)}</option>` : `<option value="">${t('Load the WSDL first')}</option>`;
+  soapHint();
+  if (s.wsdl) loadWsdl();
+}
+
+function readSoap() {
+  const opt = $('soapOp').selectedOptions[0];
+  return {
+    soapVersion: soapVersion(),
+    action: $('soapAction').value.trim(),
+    envelope: $('query').value,
+    wsdl: $('soapWsdl').value.trim(),
+    operation: opt?.dataset.name ?? '',
+  };
+}
+
+// GET /api/soap/wsdl → the Operation list (grouped by port when the WSDL has more than one)
+async function loadWsdl() {
+  const wsdl = $('soapWsdl').value.trim();
+  const file = state.req?.file;
+  soapInfo = null;
+  if (!wsdl) return soapHint(t('Enter the WSDL URL or file path, then press Load'));
+  $('soapLoad').disabled = true;
+  soapHint(t('Loading the WSDL…'));
+  try {
+    const { services = [], notes = [] } = await api(`/api/soap/wsdl?file=${encodeURIComponent(file)}&env=${encodeURIComponent(state.env.name)}&wsdl=${encodeURIComponent(wsdl)}`);
+    if (state.req?.file !== file) return;
+    soapInfo = services;
+    const cur = readSoap();
+    const ports = services.flatMap((s, si) => s.ports.map((p, pi) => ({ s, p, si, pi })));
+    // the saved operation in the port of the saved version, else the first port that has it
+    const want = ports.find(({ p }) => p.soapVersion === cur.soapVersion && p.operations.some((o) => o.name === cur.operation)) ?? ports.find(({ p }) => p.operations.some((o) => o.name === cur.operation));
+    const option = ({ p, si, pi }) => p.operations
+      .map((o, oi) => `<option value="${esc(o.name)}" data-name="${esc(o.name)}" data-key="${si}.${pi}.${oi}"${want?.p === p && o.name === cur.operation ? ' selected' : ''}>${esc(o.name)}</option>`)
+      .join('');
+    const list = ports.length > 1
+      ? ports.map((x) => `<optgroup label="${esc(`${x.s.name} / ${x.p.name} · SOAP ${x.p.soapVersion}`)}">${option(x)}</optgroup>`).join('')
+      : ports.map(option).join('');
+    $('soapOp').innerHTML = `<option value=""${want ? '' : ' selected'}>${t('Pick an operation')}</option>${list}`;
+    const n = ports.reduce((sum, { p }) => sum + p.operations.length, 0);
+    soapHint([t('{n} operations in {service}', { n, service: services.map((s) => s.name).join(', ') || wsdl }), ...notes.map(tr)].join(' · '));
+  } catch (err) {
+    if (state.req?.file === file) soapHint(err.message, true);
+  } finally {
+    $('soapLoad').disabled = false;
+  }
+}
+
+function soapPicked() {
+  const key = $('soapOp').selectedOptions[0]?.dataset.key;
+  if (!key || !soapInfo) return null;
+  const [si, pi, oi] = key.split('.').map(Number);
+  const port = soapInfo[si]?.ports[pi];
+  const op = port?.operations[oi];
+  return op ? { port, op } : null;
+}
+
+// the starter envelope (an empty Body) is not worth asking about
+const emptyEnvelope = (x) => !x.trim() || /<([\w.-]+:)?Body\b[^>]*?(\/>|>\s*<\/([\w.-]+:)?Body\s*>)/.test(x);
+
+$('soapLoad').onclick = loadWsdl;
+$('soapWsdl').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    loadWsdl();
+  }
+});
+$('soapSample').onclick = async () => {
+  if (!soapInfo && $('soapWsdl').value.trim()) await loadWsdl();
+  const hit = soapPicked();
+  if (!hit) return soapHint(soapInfo ? t('Pick an operation first') : t('Load the WSDL and pick an operation first'), true);
+  const { port, op } = hit;
+  const cur = $('query').value;
+  if (!emptyEnvelope(cur) && cur.trim() !== op.envelope.trim()) {
+    const ok = await askForm({
+      title: t('Replace the envelope?'),
+      desc: t('The envelope in the editor is replaced with a sample for {op} — what is there now is lost', { op: op.name }),
+      fields: [],
+      submit: t('Replace'),
+      onSubmit: async () => true,
+    });
+    if (!ok) return;
+  }
+  $('query').value = op.envelope.endsWith('\n') ? op.envelope : `${op.envelope}\n`;
+  $('soapAction').value = op.action ?? '';
+  setSoapVersion(port.soapVersion);
+  $('query').dispatchEvent(new Event('input')); // repaint + autosave
+  soapHint(t('Sample envelope for {op} (SOAP {v}) — replace the ? values', { op: op.name, v: port.soapVersion }));
+};
+$('soapBar').addEventListener('input', scheduleSave);
+$('soapBar').addEventListener('change', scheduleSave);
+
 // ---------- send ----------
 function currentOp() {
   const q = $('query').value;
@@ -1343,11 +1549,13 @@ async function send() {
     return validate();
   }
   const body = { file: state.req.file, env: state.env.name, variables, auth: readAuth(), headers: readHeaders(), scripts: readScripts() };
-  if (state.req.kind !== 'HttpRequest') body.query = $('query').value;
+  if (isSoap()) body.soap = readSoap();
+  else if (state.req.kind !== 'HttpRequest') body.query = $('query').value;
   const op = currentOp();
-  const writes = state.req.kind === 'HttpRequest' ? !['GET', 'HEAD', 'OPTIONS'].includes(state.req.method) : op.type === 'mutation';
+  // a SOAP call is a POST like a REST write: sent without the mutation question
+  const writes = isSoap() || (state.req.kind === 'HttpRequest' ? !['GET', 'HEAD', 'OPTIONS'].includes(state.req.method) : op.type === 'mutation');
   // a GraphQL mutation sent to prod (protected env) asks first: ตกลง / ยกเลิก. Other envs, queries and REST go straight out
-  if (state.env.protected && state.req.kind !== 'HttpRequest' && op.type === 'mutation') {
+  if (state.env.protected && state.req.kind !== 'HttpRequest' && !isSoap() && op.type === 'mutation') {
     const ok = await askForm({
       title: t('Send mutation {name}?', { name: op.name }),
       desc: t('To {env} — real data · the mutation changes data in the system', { env: state.env.title ?? state.env.name }),
@@ -1377,19 +1585,28 @@ async function send() {
 
 function renderResult() {
   const r = state.result;
-  const ok = r.status != null && r.status < 400 && !r.error && !r.response?.json?.errors?.length;
+  const ok = r.status != null && r.status < 400 && !r.error && !r.soapFault && !r.response?.json?.errors?.length;
   $('status').className = `status ${r.status == null ? 'err' : ok ? 'ok' : 'err'}`;
   $('status').textContent = r.blocked ? t('Blocked') : r.status ?? t('Failed');
   $('resMeta').textContent = [r.timeMs != null && `${r.timeMs} ms`, kb(r.size)].filter(Boolean).join(' · ');
 
   const banners = [];
   if (r.error) banners.push(`<div class="banner err">${esc(tr(r.error))}</div>`);
-  for (const w of r.warnings ?? []) banners.push(`<div class="banner warn">${esc(tr(w))}</div>`);
+  const fault = r.soapFault;
+  if (fault) {
+    banners.push(`<div class="banner err soap-fault" role="alert"><b>SOAP Fault</b>${fault.code ? ` <code>${esc(fault.code)}</code>` : ''}${fault.string ? ` — ${esc(fault.string)}` : ''}</div>`);
+  }
+  // the server also writes the fault as a warning line: the red banner above already says it
+  for (const w of r.warnings ?? []) if (!(fault && /^SOAP Fault:/.test(w))) banners.push(`<div class="banner warn">${esc(tr(w))}</div>`);
   const resp = r.response;
+  const maskFields = state.view === 'flow' ? DEFAULT_MASK : state.req?.maskFields ?? DEFAULT_MASK;
   let bodyHtml = '';
   if (resp?.json !== undefined) {
-    const shown = $('unmask').checked ? resp.json : mask(resp.json, state.view === 'flow' ? DEFAULT_MASK : state.req?.maskFields ?? DEFAULT_MASK);
+    const shown = $('unmask').checked ? resp.json : mask(resp.json, maskFields);
     bodyHtml = `<pre>${hlJSON(JSON.stringify(shown, null, 2))}</pre>`;
+  } else if (isXmlBody(resp?.text, resp?.headers)) {
+    const shown = $('unmask').checked ? resp.text : maskXML(resp.text, maskFields);
+    bodyHtml = `<pre class="xml">${hlXML(prettyXML(shown)).trimEnd()}</pre>`;
   } else if (resp?.text) bodyHtml = `<pre>${esc(resp.text)}</pre>`;
   $('tab-body').innerHTML = banners.join('') + (bodyHtml || (banners.length ? '' : t('<div class="empty">No body</div>')));
 
@@ -1435,7 +1652,17 @@ const SNIPPETS = {
   hasField: () => `$test(${JSON.stringify(t('data is returned'))}, () => {\n  $expect($res.json?.data).toBeTruthy();\n});\n`,
   time: () => `$test(${JSON.stringify(t('faster than 1 s'))}, () => {\n  $expect($res.timeMs < 1000).toBe(true);\n});\n`,
   save: () => `// ${t('keep a value for the next requests: use it as {{NAME}}')}\n$env.set("NAME", $res.json?.data);\n`,
+  // SOAP: $res.xml(name) is the text of the first element with that local name (namespace prefix ignored)
+  soapNoFault: () => `$test(${JSON.stringify(t('no SOAP Fault'))}, () => {\n  $expect($res.xml("Fault")).toBeUndefined();\n});\n`,
+  soapRead: () => `// ${t('text of the first <TagName> in the response (namespace prefix ignored) — use it as {{NAME}}')}\n$env.set("NAME", $res.xml("TagName"));\n`,
 };
+// SOAP requests get the XML snippets instead of the JSON / GraphQL ones
+function showSnippets() {
+  const soap = isSoap();
+  for (const b of $('snippets').querySelectorAll('[data-snippet]')) {
+    b.hidden = soap ? ['noErrors', 'hasField', 'save'].includes(b.dataset.snippet) : b.dataset.snippet.startsWith('soap');
+  }
+}
 // a snippet goes at the cursor (on its own line) of the post-response box
 function addSnippet(key) {
   const ta = $('postScript');
@@ -1452,7 +1679,7 @@ $('tab-tests').addEventListener('click', (e) => {
   selectReqTab('scripts');
   const ta = $('postScript');
   ta.selectionStart = ta.selectionEnd = ta.value.length;
-  if (!ta.value.trim()) addSnippet(isGql() ? 'noErrors' : 'status');
+  if (!ta.value.trim()) addSnippet(isGql() ? 'noErrors' : isSoap() ? 'soapNoFault' : 'status');
   ta.focus();
 });
 
@@ -1583,7 +1810,7 @@ async function saveNow() {
     return validate();
   }
   try {
-    await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() ? undefined : variables, rt: isRt() ? readRt() : undefined, auth: readAuth(), headers: readHeaders(), scripts: readScripts() });
+    await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() || isSoap() ? undefined : variables, rt: isRt() ? readRt() : undefined, soap: isSoap() ? readSoap() : undefined, auth: readAuth(), headers: readHeaders(), scripts: readScripts() });
     $('save').textContent = t('Saved {time}', { time: new Date().toLocaleTimeString() });
     // token or headers changed while the schema is not this env's own: try this env's schema again
     const authKey = JSON.stringify([readAuth(), readHeaders()]);
@@ -1753,8 +1980,76 @@ $('importBtn').onclick = () => {
   // paste target: the collection of the open request, else the first one
   const current = state.tree.requests.find((r) => r.file === state.req?.file)?.collectionDir;
   $('pasteCollection').innerHTML = (state.tree.collections ?? []).map((c) => `<option value="${esc(c.dir)}"${c.dir === current ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+  fillWsdlCollections(current);
   $('importDlg').showModal();
 };
+
+// ---------- import a WSDL: one SoapRequest per operation ----------
+const NEW_SOAP_COL = ':new-soap'; // not a collection dir (those never start with ":")
+function fillWsdlCollections(current) {
+  const cols = state.tree.collections ?? [];
+  const soap = cols.filter((c) => colType(c) === 'soap');
+  const other = cols.filter((c) => colType(c) !== 'soap');
+  // the open request's SOAP collection, else the first SOAP one, else a new one
+  const pick = soap.find((c) => c.dir === current)?.dir ?? soap[0]?.dir ?? NEW_SOAP_COL;
+  const opt = (c) => `<option value="${esc(c.dir)}"${c.dir === pick ? ' selected' : ''}>${esc(c.name)}</option>`;
+  $('wsdlCollection').innerHTML =
+    (soap.length ? `<optgroup label="SOAP">${soap.map(opt).join('')}</optgroup>` : '') +
+    `<option value="${NEW_SOAP_COL}"${pick === NEW_SOAP_COL ? ' selected' : ''}>${t('New SOAP collection…')}</option>` +
+    (other.length ? `<optgroup label="${t('Other collections')}">${other.map(opt).join('')}</optgroup>` : '');
+  showWsdlNewName();
+}
+function showWsdlNewName() {
+  $('wsdlNewName').hidden = $('wsdlCollection').value !== NEW_SOAP_COL;
+}
+// "http://host/HospitalService?wsdl" → "HospitalService"
+const wsdlTitle = (src) => (src.replace(/[?#].*$/, '').split(/[\\/]/).filter(Boolean).at(-1)?.replace(/\.(wsdl|xml|asmx|svc)$/i, '') || 'SOAP').replace(/^./, (c) => c.toUpperCase());
+
+$('wsdlCollection').onchange = showWsdlNewName;
+async function importWsdl() {
+  const log = $('importLog');
+  const wsdl = $('wsdlSrc').value.trim();
+  if (!wsdl) return $('wsdlSrc').focus();
+  const btn = $('wsdlGo');
+  btn.disabled = true;
+  btn.textContent = t('Importing…');
+  try {
+    let dir = $('wsdlCollection').value;
+    // a new collection without a typed name is renamed after the WSDL's service once it is known
+    const autoName = dir === NEW_SOAP_COL && !$('wsdlNewName').value.trim();
+    if (dir === NEW_SOAP_COL) {
+      const made = await api('/api/collection', { name: $('wsdlNewName').value.trim() || wsdlTitle(wsdl), type: 'soap' });
+      dir = made.dir;
+      log.insertAdjacentHTML('beforeend', `<li>${t('New SOAP collection {name} → {dir}', { name: esc(made.name), dir: esc(made.dir) })}</li>`);
+      $('wsdlNewName').value = '';
+    }
+    const r = await api('/api/soap/import', { collection: dir, wsdl, env: state.env?.name });
+    if (autoName && r.service) await api('/api/collection/settings', { dir, name: r.service });
+    log.insertAdjacentHTML(
+      'beforeend',
+      `<li>${t('WSDL {service} → {count} SOAP requests in {dir}{address}', { service: esc(r.service ?? wsdlTitle(wsdl)), count: r.count ?? r.files?.length ?? 0, dir: esc(dir), address: r.address ? ` (${esc(r.address)})` : '' })}</li>` +
+        (r.files ?? []).map((f) => `<li>  ${esc(f)}</li>`).join('') +
+        (r.notes ?? []).map((n) => `<li>  note: ${esc(tr(n))}</li>`).join(''),
+    );
+    await loadTree(false);
+    fillWsdlCollections(dir);
+    if (r.files?.[0]) await openRequest(r.files[0]);
+  } catch (err) {
+    log.insertAdjacentHTML('beforeend', `<li class="err">${esc(err.message)}</li>`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t('Import WSDL');
+  }
+}
+$('wsdlGo').onclick = importWsdl;
+// Enter in the WSDL box imports (it would otherwise submit = close the dialog)
+for (const id of ['wsdlSrc', 'wsdlNewName']) {
+  $(id).addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    importWsdl();
+  });
+}
 // Postman desktop: list its collections (with how many GraphQL requests have their query), import the ticked ones
 $('pmScan').onclick = async () => {
   const box = $('pmList');

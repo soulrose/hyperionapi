@@ -736,3 +736,121 @@ test('realtime in the app: WebSocket / Socket.IO requests (env URL + collection 
     await mocks2.close?.();
   }
 });
+
+test('SOAP: WSDL describe (imported XSD), import into a soap collection, run 1.1 / 1.2 with $res.xml, faults', async () => {
+  const { startSoapMock } = await import('../lib/mock-soap.mjs');
+  const { describeWsdl } = await import('../lib/wsdl.mjs');
+  const { serve } = await import('../lib/server.mjs');
+  const soap = await startSoapMock();
+  const mocks2 = await startMocks({ tokenTtlSec: 300 });
+  const root = await mkdtemp(path.join(tmpdir(), 'hyperion-soap-'));
+  await writeSample(root, { ...mocks2, soap });
+  const server = await serve({ dir: root, port: 0, registry: false });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const call = async (p, body) => {
+    const r = await fetch(base + p, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    return j;
+  };
+  try {
+    // describe: two ports (1.1 + 1.2), actions, envelopes built from the XSD (nested types, imported enum, choice, optional)
+    const d = await describeWsdl(soap.wsdlUrl);
+    assert.deepEqual(d.notes, []);
+    const ports = d.services[0].ports;
+    assert.deepEqual(ports.map((p) => [p.name, p.soapVersion, p.address]), [['HospitalSoap', '1.1', soap.url], ['HospitalSoap12', '1.2', soap.url]]);
+    assert.deepEqual(ports[0].operations.map((o) => [o.name, o.action]), [['GetPatient', 'http://example.org/hospital/GetPatient'], ['BookAppointment', 'http://example.org/hospital/BookAppointment']]);
+    const [getEnv, bookEnv] = ports[0].operations.map((o) => o.envelope);
+    assert.match(getEnv, /<soap:Envelope xmlns:soap="http:\/\/schemas\.xmlsoap\.org\/soap\/envelope\/" xmlns:tns="http:\/\/example\.org\/hospital">/);
+    assert.match(getEnv, /<tns:GetPatient>\s*<tns:hn>\?<\/tns:hn>\s*<\/tns:GetPatient>/);
+    assert.match(bookEnv, /<tns:slot>\s*<tns:date>\d{4}-\d\d-\d\d<\/tns:date>\s*<tns:department>OPD<\/tns:department>\s*<tns:durationMin>0<\/tns:durationMin>/);
+    assert.match(bookEnv, /<!-- optional -->\s*<tns:phone>/);
+    assert.match(bookEnv, /<!-- choice: one of walkIn, referralNo -->\s*<tns:walkIn>false<\/tns:walkIn>/);
+    assert.match(ports[1].operations[0].envelope, /xmlns:soap="http:\/\/www\.w3\.org\/2003\/05\/soap-envelope"/);
+
+    // the sample's SOAP requests: tree op, GET /api/request soap fields + inherited URL
+    const tree = await call('/api/tree');
+    assert.deepEqual(tree.requests.filter((r) => r.kind === 'SoapRequest').map((r) => r.op), ['SOAP', 'SOAP']);
+    const gp = 'collections/soap/get-patient.req.yaml';
+    const opened = await call(`/api/request?file=${gp}&env=dev`);
+    assert.equal(opened.url, '{{SOAP_URL}}');
+    assert.equal(opened.resolvedUrl, soap.url);
+    assert.deepEqual(Object.keys(opened.soap).sort(), ['action', 'envelope', 'operation', 'soapVersion', 'wsdl']);
+    assert.equal(opened.soap.soapVersion, '1.1');
+    const viaApi = await call(`/api/soap/wsdl?file=${gp}&env=dev`); // the request's wsdl: {{SOAP_URL}}?wsdl
+    assert.equal(viaApi.services[0].ports[0].operations.length, 2);
+
+    // run 1.1: SOAPAction + text/xml, $res.xml assertions in the sample's afterResponse script
+    const ok = await call('/api/run', { file: gp, env: 'dev' });
+    assert.equal(ok.status, 200, ok.error);
+    assert.equal(ok.response.headers['x-soap-version'], '1.1');
+    assert.equal(ok.response.headers['x-soap-action'], 'http://example.org/hospital/GetPatient');
+    assert.equal(ok.response.headers['x-soapaction-header'], '"http://example.org/hospital/GetPatient"');
+    assert.deepEqual(ok.tests.map((t) => [t.name, t.pass]), [['no SOAP Fault', true], ['patient returned', true]]);
+    assert.equal(ok.soapFault, undefined);
+    assert.equal(ok.passed, true);
+
+    // unsaved edits (body.soap) win: an unknown HN → SOAP Fault, warning, xmlAll
+    const edited = opened.soap.envelope.replace('{{TARGET_HN}}', '999');
+    const afterResponse = '$test("fault", () => { $expect($res.xml("faultstring")).toBe("Patient 999 not found"); $expect($res.xmlAll("Body")).toHaveLength(1); });';
+    const fault = await call('/api/run', { file: gp, env: 'dev', soap: { envelope: edited }, scripts: { afterResponse } });
+    assert.equal(fault.status, 500);
+    assert.deepEqual(fault.soapFault, { code: 'soap:Client', string: 'Patient 999 not found' });
+    assert.ok(fault.warnings.includes('SOAP Fault: soap:Client — Patient 999 not found'));
+    assert.equal(fault.tests[0].pass, true, fault.tests[0].error);
+
+    // SOAP 1.2: application/soap+xml; action="…", no SOAPAction header; a 1.2 fault
+    const book = await call('/api/run', { file: 'collections/soap/book-appointment.req.yaml', env: 'dev' });
+    assert.equal(book.status, 200, book.error);
+    assert.equal(book.response.headers['x-soap-version'], '1.2');
+    assert.equal(book.response.headers['x-soap-action'], 'http://example.org/hospital/BookAppointment');
+    assert.equal(book.response.headers['x-soapaction-header'], '(none)');
+    assert.equal(book.tests[0].pass, true);
+    const f12 = await call('/api/run', { file: 'collections/soap/book-appointment.req.yaml', env: 'dev', soap: { envelope: ports[1].operations[1].envelope } });
+    assert.deepEqual(f12.soapFault, { code: 'soap:Sender', string: 'Patient ? not found' });
+    assert.equal(f12.passed, false);
+
+    // save: top-level fields, '' removes one, envelope as a literal block
+    await call('/api/save', { file: gp, soap: { soapVersion: '1.2', operation: '', envelope: '<x/>' } });
+    const savedText = await readFile(path.join(root, gp), 'utf8');
+    const saved = YAML.parse(savedText);
+    assert.equal(saved.soapVersion, '1.2');
+    assert.equal(saved.operation, undefined);
+    assert.equal(saved.envelope, '<x/>\n');
+    assert.match(savedText, /envelope: \|/);
+
+    // import into a new soap collection: one request per operation of the 1.1 port, SOAP_URL set for the env
+    const col = await call('/api/collection', { name: 'Imported SOAP', type: 'soap' });
+    const colDoc = YAML.parse(await readFile(path.join(root, col.dir, '_collection.yaml'), 'utf8'));
+    assert.deepEqual([colDoc.type, colDoc.execution.url, colDoc.schemaDiscovery], ['soap', '{{SOAP_URL}}', undefined]);
+    const envFile = path.join(root, 'envs/test.env.yaml');
+    const envDoc = YAML.parse(await readFile(envFile, 'utf8'));
+    delete envDoc.variables.SOAP_URL;
+    await writeFile(envFile, YAML.stringify(envDoc));
+    const imp = await call('/api/soap/import', { collection: col.dir, wsdl: soap.wsdlUrl, env: 'test' });
+    assert.equal(imp.count, 2);
+    assert.equal(imp.service, 'HospitalService');
+    assert.equal(imp.address, soap.url);
+    assert.equal(YAML.parse(await readFile(envFile, 'utf8')).variables.SOAP_URL, soap.url);
+    const r0 = YAML.parse(await readFile(path.join(root, imp.files[0]), 'utf8'));
+    assert.deepEqual(
+      [r0.kind, r0.metadata.name, r0.soapVersion, r0.action, r0.operation, r0.wsdl, r0.url],
+      ['SoapRequest', 'GetPatient', '1.1', 'http://example.org/hospital/GetPatient', 'GetPatient', soap.wsdlUrl, undefined],
+    );
+    // an imported request runs with the collection URL
+    const ran = await call('/api/run', { file: imp.files[0], env: 'test', soap: { envelope: r0.envelope.replace('>?<', '>42<') }, scripts: { afterResponse: '$test("name", () => $expect($res.xml("lastName")).toBe("Dent"));' } });
+    assert.equal(ran.status, 200, ran.error);
+    assert.equal(ran.tests[0].pass, true);
+
+    // starter request in a soap collection
+    const starter = (await call('/api/request/new', { collection: col.dir, name: 'Blank', kind: 'SoapRequest' })).file;
+    const sd = YAML.parse(await readFile(path.join(root, starter), 'utf8'));
+    assert.deepEqual([sd.soapVersion, sd.action], ['1.1', '']);
+    assert.match(sd.envelope, /<soap:Body>/);
+    assert.equal((await call('/api/collection/settings', { dir: col.dir, type: 'soap' })).saved, true);
+  } finally {
+    server.close();
+    await soap.close();
+    await mocks2.close?.();
+  }
+});

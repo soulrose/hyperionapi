@@ -2,7 +2,7 @@
 
 **English** · [ไทย](README.th.md)
 
-A light API client for every project: GraphQL, REST, gRPC, WebSocket and Socket.IO. When an environment hides its GraphQL schema (introspection off), Hyperion borrows the schema from dev for autocomplete. It renews login tokens by itself, asks before a GraphQL mutation goes to prod, and imports from Postman.
+A light API client for every project: GraphQL, REST, SOAP, gRPC, WebSocket and Socket.IO. When an environment hides its GraphQL schema (introspection off), Hyperion borrows the schema from dev for autocomplete. It renews login tokens by itself, asks before a GraphQL mutation goes to prod, and imports from Postman.
 
 - **Light:** plain Node.js, no build step, few dependencies (`yaml`, `graphql`, and `@grpc/*` for gRPC); the UI opens as its own window.
 - **Git-native:** a project is a plain folder of YAML files. Keep it in the project's own repo and commit / review it; tokens and secrets live in gitignored files.
@@ -118,6 +118,17 @@ Auth: **Other login (JSON)** in Settings, or in `_collection.yaml` (an example i
 
 Auth and headers work as for other requests: WebSocket / Socket.IO send them as connection headers, gRPC as metadata (e.g. `authorization: Bearer …` from the collection's Keycloak login). These connections stay open in the app, so they cannot be used in flows or `hyperion run`. Try them in the demo: collections **Live (WebSocket)** and **Echo (gRPC)** talk to local mocks.
 
+## SOAP
+
+**+ Collection** → type **SOAP** (default URL `{{SOAP_URL}}`), or **Import** → "From a WSDL (SOAP)": paste the WSDL URL or file path and pick a collection (or a new SOAP collection, named after the service). Every operation becomes a request with a sample envelope (`<!-- optional -->`, `<!-- repeatable -->`, `<!-- choice -->` mark the WSDL rules), and `SOAP_URL` is set for the env if it was empty.
+
+- The editor (**Envelope** tab) holds the XML sent; env `{{variables}}` work inside it. The SOAP bar: version **1.1 / 1.2**, **SOAPAction**, **WSDL** + **Load**, **Operation**, **Sample envelope** (asks before replacing an edited envelope).
+- 1.1 sends `Content-Type: text/xml` + `SOAPAction`; 1.2 sends `application/soap+xml; action=…`. Auth and headers apply as for other requests (a header you set wins).
+- Responses in XML are pretty-printed and highlighted (for every request kind); a SOAP Fault shows a red banner with its code and message. Patient fields are masked in XML too.
+- Tests: `$res.xml("Tag")` reads the first element with that name (namespace prefix ignored), `$res.xmlAll("Tag")` all of them. Snippets: **No SOAP Fault**, **Read a value**.
+- WSDL 1.1 (document/literal and rpc), imported WSDL / XSD files followed a few levels deep. Not supported: WSDL 2.0, WS-Security, MTOM attachments.
+- Protected envs: the CLI asks for `--confirm` before operations whose name looks like a write (create, add, update, save, delete, cancel, submit, book, …).
+
 ## Flows (like Postman Flows)
 
 - Sidebar **Flows** → **+ Flow** → **+ Block** picks a request from any collection → **Run** (Ctrl+Enter)
@@ -179,7 +190,7 @@ Variable precedence (low → high): `hyperion.yaml` < collection / folder / requ
 npm test
 ```
 
-26 tests: schema fallback (including borrowing dev's schema), request-level and per-env auth, the schema explorer, flows, cURL paste, token renewal / 401 retry / single flight, Keycloak, schema drift, the prod guard, Postman import, the pm shim, creating / moving / splitting collections, WebSocket / Socket.IO / gRPC, REST hosts as env variables, and scripts written in the app.
+27 tests: schema fallback (including borrowing dev's schema), request-level and per-env auth, the schema explorer, flows, cURL paste, token renewal / 401 retry / single flight, Keycloak, schema drift, the prod guard, Postman import, the pm shim, creating / moving / splitting collections, WebSocket / Socket.IO / gRPC, REST hosts as env variables, scripts written in the app, and SOAP (WSDL import, 1.1 / 1.2, faults).
 
 ## About
 

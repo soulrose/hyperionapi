@@ -82,7 +82,7 @@
         <span class="save-state" id="save" title="Edits are saved to the file automatically (Ctrl+S saves now)" data-i18n-title data-i18n>Autosave</span>
       </div>
       <div class="tabs req-tabs" role="tablist" aria-label="Request">
-        <button role="tab" data-rtab="query" aria-selected="true">Query</button>
+        <button role="tab" data-rtab="query" aria-selected="true" id="qTab">Query</button>
         <button role="tab" data-rtab="auth">Authorization<i class="dot" id="authDot" hidden></i></button>
         <button role="tab" data-rtab="headers">Headers<i class="dot" id="headersDot" hidden></i></button>
         <button role="tab" data-rtab="scripts">Scripts<i class="dot" id="scriptsDot" hidden></i></button>
@@ -110,6 +110,17 @@
           <label data-rt="grpc" class="check"><input type="checkbox" id="rtTls"> TLS</label>
           <button data-rt="grpc" class="ghost small" id="rtExample" type="button" title="Insert a sample message for this method" data-i18n-title data-i18n>Sample message</button>
           <small class="rt-hint" id="rtHint"></small>
+        </div>
+        <!-- SOAP: version, SOAPAction and the WSDL operation (the editor below is the envelope) -->
+        <div class="rt-bar soap-bar" id="soapBar" hidden>
+          <div class="bar-field"><span data-i18n>Version</span><div class="seg" role="radiogroup" aria-label="SOAP version" data-i18n-aria><label><input type="radio" name="soapVersion" value="1.1" checked>SOAP 1.1</label><label><input type="radio" name="soapVersion" value="1.2">SOAP 1.2</label></div></div>
+          <label class="wide">SOAPAction<input id="soapAction" class="mono" placeholder="Empty = no SOAPAction" data-i18n-placeholder spellcheck="false" autocomplete="off"></label>
+          <div class="bar-break"></div>
+          <label class="wide" data-i18n>WSDL<input id="soapWsdl" class="mono" placeholder="http://host/service?wsdl or wsdl/service.wsdl" data-i18n-placeholder spellcheck="false" autocomplete="off"></label>
+          <button class="ghost small" id="soapLoad" type="button" title="Read the operations from the WSDL" data-i18n-title data-i18n>Load</button>
+          <label class="wide" data-i18n>Operation<select id="soapOp"></select></label>
+          <button class="ghost small" id="soapSample" type="button" title="Fill the envelope, SOAPAction and version from the chosen operation" data-i18n-title data-i18n>Sample envelope</button>
+          <small class="rt-hint" id="soapHint"></small>
         </div>
         <div class="code-wrap grow" id="queryWrap">
           <pre class="hl" aria-hidden="true"><code id="queryHl"></code></pre>
@@ -160,6 +171,8 @@
           <button type="button" class="ghost small" data-snippet="hasField" data-i18n>Field exists</button>
           <button type="button" class="ghost small" data-snippet="time" data-i18n>Faster than 1 s</button>
           <button type="button" class="ghost small" data-snippet="save" data-i18n>Save a value to a variable</button>
+          <button type="button" class="ghost small" data-snippet="soapNoFault" data-i18n hidden>No SOAP Fault</button>
+          <button type="button" class="ghost small" data-snippet="soapRead" data-i18n hidden>Read a value</button>
         </div>
         <div class="code-wrap script-wrap grow">
           <pre class="hl" aria-hidden="true"><code id="postScriptHl"></code></pre>
@@ -204,7 +217,7 @@
       <p class="about-tag" data-i18n>An API testing tool for every project</p>
       <span class="about-version" id="aboutVersion"></span>
     </div>
-    <div class="about-chips" aria-label="Supports" data-i18n-aria><span>GraphQL</span><span>REST</span><span>gRPC</span><span>WebSocket</span><span>Socket.IO</span></div>
+    <div class="about-chips" aria-label="Supports" data-i18n-aria><span>GraphQL</span><span>REST</span><span>gRPC</span><span>WebSocket</span><span>Socket.IO</span><span>SOAP</span></div>
     <dl class="about-meta">
       <dt data-i18n>Developer</dt><dd id="aboutDev"></dd>
       <dt>Runtime</dt><dd id="aboutNode"></dd>
@@ -227,7 +240,7 @@
 
   <dialog id="importDlg">
     <form method="dialog">
-      <h2 data-i18n>Import from Postman</h2>
+      <h2 data-i18n>Import</h2>
       <h3 class="import-sub" data-i18n>From Postman on this computer (GraphQL requests included)</h3>
       <p data-i18n>Reads straight from the installed Postman app — no export needed, nothing in Postman is changed</p>
       <div class="pm-desk">
@@ -244,8 +257,17 @@
         <input id="pasteName" placeholder="Request name (optional)" data-i18n-placeholder autocomplete="off">
       </div>
       <textarea id="pasteText" rows="7" spellcheck="false" data-i18n-placeholder placeholder="curl 'https://…/graphql' -H 'Authorization: Bearer …' --data-raw '{&quot;query&quot;:&quot;…&quot;}'&#10;&#10;or&#10;&#10;query Api {&#10;  api { id }&#10;}"></textarea>
+      <div class="paste-go"><button type="button" class="ghost small" id="pasteGo" data-i18n>Import pasted text</button></div>
+      <h3 class="import-sub" data-i18n>From a WSDL (SOAP)</h3>
+      <p data-i18n>One SOAP request per operation, each with a sample envelope — a URL or a file path (from the project folder, or a full path)</p>
+      <input id="wsdlSrc" class="mono wsdl-src" placeholder="http://host/service?wsdl or wsdl/service.wsdl" data-i18n-placeholder spellcheck="false" autocomplete="off" aria-label="WSDL">
+      <div class="paste-row">
+        <select id="wsdlCollection" aria-label="Into collection" data-i18n-aria></select>
+        <input id="wsdlNewName" placeholder="New collection name (empty = from the WSDL)" data-i18n-placeholder autocomplete="off" hidden>
+        <button type="button" class="ghost small" id="wsdlGo" data-i18n>Import WSDL</button>
+      </div>
       <ul class="import-log" id="importLog"></ul>
-      <menu><button type="button" class="primary" id="pasteGo" data-i18n>Import pasted text</button><button value="close" class="ghost" data-i18n>Close</button></menu>
+      <menu><button value="close" class="primary" data-i18n>Close</button></menu>
     </form>
   </dialog>
 
