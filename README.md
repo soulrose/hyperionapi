@@ -122,7 +122,7 @@ Auth and headers work as for other requests: WebSocket / Socket.IO send them as 
 
 **+ Collection** → type **SOAP** (default URL `{{SOAP_URL}}`), or **Import** → "From a WSDL (SOAP)": paste the WSDL URL or file path and pick a collection (or a new SOAP collection, named after the service). Every operation becomes a request with a sample envelope (`<!-- optional -->`, `<!-- repeatable -->`, `<!-- choice -->` mark the WSDL rules), and `SOAP_URL` is set for the env if it was empty.
 
-- The editor (**Envelope** tab) holds the XML sent; env `{{variables}}` work inside it. The SOAP bar: version **1.1 / 1.2**, **SOAPAction**, **WSDL** + **Load**, **Operation**, **Sample envelope** (asks before replacing an edited envelope).
+- The editor (**Envelope** tab) holds the XML sent; env `{{variables}}` work inside it. The SOAP bar: version **1.1 / 1.2**, **SOAPAction**, **WSDL** + **Load**, **Operation**, **Sample envelope** (asks before replacing an edited envelope). **Load** also sets the URL to the service address from the WSDL when the URL is empty or still the `…?wsdl` address; a URL ending in `?wsdl` is flagged next to the URL box.
 - 1.1 sends `Content-Type: text/xml` + `SOAPAction`; 1.2 sends `application/soap+xml; action=…`. Auth and headers apply as for other requests (a header you set wins).
 - Responses in XML are pretty-printed and highlighted (for every request kind); a SOAP Fault shows a red banner with its code and message. Patient fields are masked in XML too.
 - Tests: `$res.xml("Tag")` reads the first element with that name (namespace prefix ignored), `$res.xmlAll("Tag")` all of them. Snippets: **No SOAP Fault**, **Read a value**.

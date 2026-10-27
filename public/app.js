@@ -699,6 +699,7 @@ $('envEdit').onclick = () => editEnv('GQL_URL');
 // URL bar autosave: env variable or the request's own URL
 let urlTimer;
 let urlSyncTimer;
+$('execUrl').addEventListener('input', () => isSoap() && paintUrlSrc()); // the ?wsdl warning follows typing
 $('execUrl').addEventListener('input', () => {
   clearTimeout(urlTimer);
   $('execUrl').classList.remove('unset');
@@ -743,6 +744,13 @@ function paintUrlSrc() {
   src.title = '';
   $('hostVar').hidden = !r?.fixedHost;
   if (!r) return;
+  // SOAP: …?wsdl is where the description lives, not where requests go
+  if (isSoap() && isWsdlUrl($('execUrl').value)) {
+    src.textContent = t('WSDL address — remove ?wsdl');
+    src.title = t('Requests go to the service address (usually the same URL without ?wsdl). Press Load next to WSDL to set it from the WSDL.');
+    src.classList.add('warn');
+    return;
+  }
   if (r.urlVar) src.textContent = `${r.urlVar.name} · ${envTitle}`;
   else if (r.fixedHost) {
     src.textContent = t('fixed host');
@@ -1480,12 +1488,30 @@ async function loadWsdl() {
       : ports.map(option).join('');
     $('soapOp').innerHTML = `<option value=""${want ? '' : ' selected'}>${t('Pick an operation')}</option>${list}`;
     const n = ports.reduce((sum, { p }) => sum + p.operations.length, 0);
-    soapHint([t('{n} operations in {service}', { n, service: services.map((s) => s.name).join(', ') || wsdl }), ...notes.map(tr)].join(' · '));
+    // the address requests go to: the saved operation's port, else the first port of the saved version, else the first
+    const port = want?.p ?? ports.find(({ p }) => p.soapVersion === cur.soapVersion)?.p ?? ports[0]?.p;
+    const urlSet = await fillSoapUrl(port?.address, wsdl);
+    soapHint([
+      t('{n} operations in {service}', { n, service: services.map((s) => s.name).join(', ') || wsdl }),
+      ...(urlSet ? [t('URL set from the WSDL: {address}', { address: port.address })] : []),
+      ...notes.map(tr),
+    ].join(' · '));
   } catch (err) {
     if (state.req?.file === file) soapHint(err.message, true);
   } finally {
     $('soapLoad').disabled = false;
   }
+}
+
+// a SOAP URL that is still the WSDL's own address (…?wsdl) or empty: requests belong at the service address
+const isWsdlUrl = (u) => /\?wsdl\b/i.test(u);
+async function fillSoapUrl(address, wsdl) {
+  if (!address || !state.req || !isSoap()) return false;
+  const now = $('execUrl').value.trim();
+  if (now && !isWsdlUrl(now) && now !== wsdl) return false; // a real URL is kept
+  $('execUrl').value = address;
+  await saveUrl(); // the env variable when the URL is {{SOAP_URL}}, else the request's own URL
+  return true;
 }
 
 function soapPicked() {

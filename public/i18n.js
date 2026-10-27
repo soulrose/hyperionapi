@@ -8,6 +8,9 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  "URL set from the WSDL: {address}": "ตั้ง URL จาก WSDL แล้ว: {address}",
+  "WSDL address — remove ?wsdl": "นี่คือที่อยู่ WSDL — ลบ ?wsdl ออก",
+  "Requests go to the service address (usually the same URL without ?wsdl). Press Load next to WSDL to set it from the WSDL.": "request ต้องส่งไปที่อยู่ของ service (ปกติคือ URL เดียวกันที่ไม่มี ?wsdl) · กดโหลดข้าง WSDL เพื่อใส่ให้จาก WSDL",
   "Theme": "ธีม",
   // Settings: fonts
   "UI font": "ฟอนต์ของแอป",
