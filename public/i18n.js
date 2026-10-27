@@ -210,7 +210,7 @@ const TH = {
   '{time}  deleted {name} → {trash}{flows}': '{time}  ลบ {name} → {trash}{flows}',
   '<p class="hint">Reading…</p>': '<p class="hint">กำลังอ่าน…</p>',
   '<p class="hint">Postman desktop was not found on this computer</p>': '<p class="hint">ไม่พบ Postman desktop ในเครื่องนี้</p>',
-  '<p class="hint">No GraphQL requests found in Postman</p>': '<p class="hint">ไม่พบ request แบบ GraphQL ใน Postman</p>',
+  '<p class="hint">No requests found in Postman</p>': '<p class="hint">ไม่พบ request ใน Postman</p>',
   ' · {n} more with only a name': ' · อีก {n} ตัวมีแต่ชื่อ',
   'Name only — open them once in Postman, then import again': 'ตัวที่มีแต่ชื่อ — เปิดใน Postman หนึ่งครั้งแล้วนำเข้าใหม่',
   'Import selected collections': 'นำเข้า collection ที่เลือก',

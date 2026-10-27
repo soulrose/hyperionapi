@@ -2106,14 +2106,14 @@ $('pmScan').onclick = async () => {
       return;
     }
     if (!r.collections.length) {
-      box.innerHTML = t('<p class="hint">No GraphQL requests found in Postman</p>');
+      box.innerHTML = t('<p class="hint">No requests found in Postman</p>');
       return;
     }
     box.innerHTML =
       r.collections
         .map(
           (c) => `<label class="check pm-col"><input type="checkbox" value="${esc(c.id)}"${c.requests ? ' checked' : ''}${c.requests ? '' : ' disabled'}>` +
-            `<b>${esc(c.name)}</b> <small>${c.requests} request${c.namesOnly.length ? t(' · {n} more with only a name', { n: c.namesOnly.length }) : ''}</small></label>` +
+            `<b>${esc(c.name)}</b> <small>${[c.graphql && `GraphQL ${c.graphql}`, c.rest && `REST ${c.rest}`].filter(Boolean).join(' · ') || '0 request'}${c.namesOnly.length ? t(' · {n} more with only a name', { n: c.namesOnly.length }) : ''}</small></label>` +
             (c.namesOnly.length
               ? `<details class="pm-names"><summary>${t('Name only — open them once in Postman, then import again')}</summary><p>${c.namesOnly.map(esc).join(', ')}</p></details>`
               : ''),
