@@ -194,4 +194,4 @@ npm test
 
 ## About
 
-Version 1.0.0 (V.01.00.00) · developer: soulrose
+Version 1.1.0 (V.01.01.00) · developer: soulrose
