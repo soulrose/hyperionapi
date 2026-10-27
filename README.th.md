@@ -119,7 +119,7 @@ request แบบนี้เปิดค้างไว้ในแอป — �
 
 **+ Collection** → ชนิด **SOAP** (URL เริ่มต้น `{{SOAP_URL}}`) หรือ **Import** → "From a WSDL (SOAP)": วาง URL หรือ path ของ WSDL แล้วเลือก collection (หรือสร้าง SOAP collection ใหม่ ตั้งชื่อตาม service ให้) — ทุก operation กลายเป็น request พร้อม envelope ตัวอย่าง (`<!-- optional -->`, `<!-- repeatable -->`, `<!-- choice -->` บอกกฎจาก WSDL) และตั้ง `SOAP_URL` ของ env ให้ถ้ายังว่าง
 
-- ช่อง editor (แท็บ **Envelope**) คือ XML ที่ส่ง ใช้ `{{ตัวแปร}}` ของ env ได้ · แถบ SOAP: เวอร์ชัน **1.1 / 1.2**, **SOAPAction**, **WSDL** + **Load**, **Operation**, **Sample envelope** (ถามก่อนทับ envelope ที่แก้ไว้) · กด **Load** แล้วใส่ URL ของ service จาก WSDL ให้ ถ้า URL ยังว่างหรือยังเป็นที่อยู่ `…?wsdl` · URL ที่ลงท้าย `?wsdl` มีคำเตือนข้างช่อง URL
+- ช่อง editor (แท็บ **Envelope**) คือ XML ที่ส่ง ใช้ `{{ตัวแปร}}` ของ env ได้ · แถบ SOAP: เวอร์ชัน **1.1 / 1.2**, **SOAPAction**, **WSDL** + **Load**, **Operation**, **Sample envelope** (ถามก่อนทับ envelope ที่แก้ไว้) · เลือก operation แล้วตั้ง SOAPAction กับเวอร์ชันให้ และใส่ envelope ตัวอย่างให้เอง ยกเว้น envelope ที่แก้ค่าไว้แล้ว · กด **Load** แล้วใส่ URL ของ service จาก WSDL ให้ ถ้า URL ยังว่างหรือยังเป็นที่อยู่ `…?wsdl` · URL ที่ลงท้าย `?wsdl` มีคำเตือนข้างช่อง URL
 - 1.1 ส่ง `Content-Type: text/xml` + `SOAPAction` · 1.2 ส่ง `application/soap+xml; action=…` · auth และ headers ใช้แบบเดียวกับ request อื่น (header ที่ตั้งเองชนะ)
 - คำตอบที่เป็น XML จัดหน้าและมีสีให้ (ทุกชนิด request) · SOAP Fault ขึ้นแถบแดงพร้อม code และข้อความ · ข้อมูลผู้ป่วยใน XML ถูกซ่อนเหมือน JSON
 - Tests: `$res.xml("Tag")` อ่านค่า element แรกที่ชื่อนี้ (ไม่สน prefix), `$res.xmlAll("Tag")` ทุกตัว · ปุ่มตัวอย่าง **No SOAP Fault**, **Read a value**

@@ -8,6 +8,7 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  "SOAPAction set for {op} — your edited envelope was kept · press Sample envelope to replace it": "ตั้ง SOAPAction ของ {op} แล้ว — envelope ที่แก้ไว้ยังอยู่ · กด Envelope ตัวอย่าง ถ้าต้องการแทนที่",
   "URL set from the WSDL: {address}": "ตั้ง URL จาก WSDL แล้ว: {address}",
   "WSDL address — remove ?wsdl": "นี่คือที่อยู่ WSDL — ลบ ?wsdl ออก",
   "Requests go to the service address (usually the same URL without ?wsdl). Press Load next to WSDL to set it from the WSDL.": "request ต้องส่งไปที่อยู่ของ service (ปกติคือ URL เดียวกันที่ไม่มี ?wsdl) · กดโหลดข้าง WSDL เพื่อใส่ให้จาก WSDL",

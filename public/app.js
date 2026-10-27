@@ -1555,6 +1555,24 @@ $('soapSample').onclick = async () => {
   $('query').dispatchEvent(new Event('input')); // repaint + autosave
   soapHint(t('Sample envelope for {op} (SOAP {v}) — replace the ? values', { op: op.name, v: port.soapVersion }));
 };
+// picking an operation: SOAPAction and version follow it, and so does the envelope unless it holds your edits
+// (still empty / the starter / an untouched sample of any operation) — then Sample envelope replaces it on purpose
+const isSampleEnvelope = (x) => (soapInfo ?? []).some((s) => s.ports.some((p) => p.operations.some((o) => o.envelope.trim() === x.trim())));
+$('soapOp').addEventListener('change', () => {
+  const hit = soapPicked();
+  if (!hit) return;
+  const { port, op } = hit;
+  $('soapAction').value = op.action ?? '';
+  setSoapVersion(port.soapVersion);
+  const cur = $('query').value;
+  if (emptyEnvelope(cur) || isSampleEnvelope(cur)) {
+    $('query').value = op.envelope.endsWith('\n') ? op.envelope : `${op.envelope}\n`;
+    soapHint(t('Sample envelope for {op} (SOAP {v}) — replace the ? values', { op: op.name, v: port.soapVersion }));
+  } else {
+    soapHint(t('SOAPAction set for {op} — your edited envelope was kept · press Sample envelope to replace it', { op: op.name }));
+  }
+  $('query').dispatchEvent(new Event('input')); // repaint + autosave
+});
 $('soapBar').addEventListener('input', scheduleSave);
 $('soapBar').addEventListener('change', scheduleSave);
 
