@@ -469,7 +469,7 @@ async function showSettings() {
       ...(envList.length
         ? [
             ...envList.map((e) => ({ name: `envShow_${e.name}`, type: 'check', label: t('Show env {env} in the top bar', { env: e.title ?? e.name }), value: !hidden.has(e.name) })),
-            { name: 'newEnv', label: t('Add an env'), value: envList.some((e) => e.name === 'localhost') ? '' : 'localhost', placeholder: 'localhost' },
+            { name: 'newEnv', label: t('Add an env'), value: envList.some((e) => e.name === 'local') ? '' : 'local', placeholder: 'local' },
             { name: 'addEnv', label: t('Add env'), type: 'action' },
           ]
         : []),

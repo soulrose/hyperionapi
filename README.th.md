@@ -31,8 +31,8 @@
 
 - กดชื่อโปรเจกต์ข้างโลโก้ → เลือกโปรเจกต์ที่เคยเปิด, **เปิดโฟลเดอร์…** (วาง path ของโฟลเดอร์ที่มี `hyperion.yaml`) หรือ **สร้างโปรเจกต์ใหม่…**
 - ปุ่มสร้างโปรเจกต์ใส่ค่าให้แล้ว: ชื่อ "My API" และโฟลเดอร์ `D:\OffLab\hyperion-projects\<ชื่อ>` (โฟลเดอร์เปลี่ยนตามชื่อที่พิมพ์ — เปลี่ยนที่ตั้งได้ด้วย env var `HYPERION_HOME`)
-- โปรเจกต์ใหม่ได้ env `localhost` (URL `http://localhost:8080/graphql`), `dev`, `test`, `prod`, `training` (prod เป็น protected) และ collection `Main API` พร้อม request ตัวอย่าง — แก้ `GQL_URL` ใน `envs/*.env.yaml` แล้วยิงได้เลย
-- **Settings → env:** เอาติ๊กออกเพื่อซ่อน env จากแถบบน (แยกตามโปรเจกต์ ในเครื่องนี้ ไฟล์ env ยังอยู่) · **เพิ่ม env** สร้าง env ใหม่ (เช่น `localhost` ในโปรเจกต์เก่า) จาก template เดียวกัน
+- โปรเจกต์ใหม่ได้ env `local` (URL `http://localhost:8080/graphql`), `dev`, `test`, `prod`, `training` (prod เป็น protected) และ collection `Main API` พร้อม request ตัวอย่าง — แก้ `GQL_URL` ใน `envs/*.env.yaml` แล้วยิงได้เลย
+- **Settings → env:** เอาติ๊กออกเพื่อซ่อน env จากแถบบน (แยกตามโปรเจกต์ ในเครื่องนี้ ไฟล์ env ยังอยู่) · **เพิ่ม env** สร้าง env ใหม่ (เช่น `local` ในโปรเจกต์เก่า) จาก template เดียวกัน
 - รายการโปรเจกต์เก็บที่ `%USERPROFILE%\.hyperion\projects.json` — ไม่มีไฟล์ของโปรเจกต์ไหนอยู่ในโฟลเดอร์ Hyperion
 
 ## Schema เมื่อ env ปิด introspection
