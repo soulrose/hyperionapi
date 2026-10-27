@@ -322,7 +322,7 @@ const TH = {
   'Developer': 'ผู้พัฒนา',
   'Cancel': 'ยกเลิก',
   'Import from Postman': 'นำเข้าจาก Postman',
-  'From Postman on this computer (GraphQL requests included)': 'จาก Postman ในเครื่องนี้ (รวม request แบบ GraphQL)',
+  'From Postman on this computer (GraphQL and REST requests)': 'จาก Postman ในเครื่องนี้ (request แบบ GraphQL และ REST)',
   'Reads straight from the installed Postman app — no export needed, nothing in Postman is changed': 'อ่านจากโปรแกรม Postman ที่ติดตั้งอยู่โดยตรง — ไม่ต้อง export, ไม่แก้อะไรใน Postman',
   'Read from Postman': 'อ่านจาก Postman',
   'From exported files': 'จากไฟล์ที่ export',
