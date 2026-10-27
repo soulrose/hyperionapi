@@ -1,6 +1,6 @@
 {
   "name": "hyperion-api",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Git-native GraphQL/REST runner with dual-plane schema discovery (schema from Dev, execute on Prod)",
   "type": "module",
   "bin": {

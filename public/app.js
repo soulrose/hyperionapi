@@ -267,7 +267,8 @@ function toggleMenu(open = $('projectMenu').hidden) {
 async function showAbout() {
   toggleMenu(false);
   const a = await api('/api/about');
-  $('aboutVersion').textContent = t('Version {version}', { version: a.version });
+  // 1.0.0 → V.01.00.00
+  $('aboutVersion').textContent = `V.${a.version.split('.').map((n) => n.padStart(2, '0')).join('.')}`;
   $('aboutDev').textContent = a.dev;
   $('aboutNode').textContent = `Node ${a.node.replace(/^v/, '')}`;
   $('aboutDlg').showModal();

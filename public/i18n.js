@@ -22,7 +22,6 @@ const TH = {
   'Split': 'แยก',
   'Split this folder into a new collection': 'แยกโฟลเดอร์นี้ออกเป็น collection ใหม่',
   'No project open': 'ยังไม่ได้เปิดโปรเจกต์',
-  'Version {version}': 'เวอร์ชัน {version}',
   'Open project folder': 'เปิดโฟลเดอร์โปรเจกต์',
   'Paste the path of a folder that contains hyperion.yaml (e.g. a folder in the project repo)': 'วาง path ของโฟลเดอร์ที่มี hyperion.yaml (เช่นโฟลเดอร์ใน repo ของโปรเจกต์)',
   'Open': 'เปิด',
