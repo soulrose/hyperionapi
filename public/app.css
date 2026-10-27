@@ -673,3 +673,8 @@ body.soap-mode #lint, body.soap-mode .q-main > .sub-head, body.soap-mode .vars-w
 
 /* the highlight layer must match the textarea glyph for glyph (the general `code` rule shrinks text to .95em) */
 .code-wrap .hl code { font: inherit; letter-spacing: inherit; }
+
+/* collection row: icon buttons that leave the name its room */
+.group-head .icon-btn { padding: 2px 4px; line-height: 0; flex: none; }
+.group-head .icon-btn svg { display: block; }
+.group-head { gap: 2px; }

@@ -308,7 +308,7 @@ function renderSide() {
     // fold / unfold a collection (remembered per project); searching shows matches even in folded ones
     const folded = foldedCols().has(col.dir) && !q;
     g.className = `group${folded ? ' folded' : ''}`;
-    g.innerHTML = `<div class="group-head"><button class="col-fold" aria-expanded="${!folded}" title="${t('Collapse / expand {name}', { name: esc(col.name) })}"><h3 title="${esc(col.dir)}">${esc(col.name)}</h3><small>${reqs.length}</small></button><button class="icon-btn col-settings" title="${t('Name, type, URL, auth, headers and delete for {name}', { name: esc(col.name) })}">${t('Settings')}</button><button class="icon-btn col-add" title="${t('Add a request to {name}', { name: esc(col.name) })}">+ request</button><button class="icon-btn col-export" title="${t('Save {name} (every request, its settings, no secrets) as a .hyperion.json file', { name: esc(col.name) })}">${t('Export')}</button></div>`;
+    g.innerHTML = `<div class="group-head"><button class="col-fold" aria-expanded="${!folded}" title="${t('Collapse / expand {name}', { name: esc(col.name) })}"><h3 title="${esc(col.dir)}">${esc(col.name)}</h3><small>${reqs.length}</small></button><button class="icon-btn col-settings" title="${t('Settings')} — ${t('Name, type, URL, auth, headers and delete for {name}', { name: esc(col.name) })}" aria-label="${t('Settings')}">${ICON.settings}</button><button class="icon-btn col-add" title="${t('Add a request to {name}', { name: esc(col.name) })}" aria-label="+ request">${ICON.add}</button><button class="icon-btn col-export" title="${t('Export')} — ${t('Save {name} (every request, its settings, no secrets) as a .hyperion.json file', { name: esc(col.name) })}" aria-label="${t('Export')}">${ICON.export}</button></div>`;
     g.querySelector('.col-fold').onclick = () => {
       const set = foldedCols();
       set.has(col.dir) ? set.delete(col.dir) : set.add(col.dir);
@@ -2178,6 +2178,13 @@ async function importFiles(files) {
   await loadTree();
 }
 $('importFile').onchange = (e) => importFiles([...e.target.files]);
+
+// small stroke icons for the collection row (gear, plus, download)
+const ICON = {
+  settings: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  add: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  export: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+};
 
 // ---------- export / import one file (*.hyperion.json): a request, or a flow with every request it runs ----------
 function saveAs(name, data) {
