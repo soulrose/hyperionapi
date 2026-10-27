@@ -1079,6 +1079,7 @@ async function openRequest(file) {
   $('save').textContent = t('Autosave');
   $('move').disabled = false;
   $('delReq').disabled = false;
+  $('exportReq').disabled = false;
   disarmDelete();
   $('sync').disabled = !isGql();
   const s = r.scripts ?? {};
@@ -2162,7 +2163,13 @@ async function importFiles(files) {
   const log = $('importLog');
   for (const f of files) {
     try {
-      const r = await api('/api/import', { name: f.name, json: JSON.parse(await f.text()) });
+      const json = JSON.parse(await f.text());
+      // a Hyperion export (request / flow) or a Postman collection / environment
+      if (json?.kind === 'HyperionExport') {
+        log.insertAdjacentHTML('beforeend', `<li>${esc(f.name)}: ${esc(bundleSummary(await api('/api/import/bundle', { bundle: json })))}</li>`);
+        continue;
+      }
+      const r = await api('/api/import', { name: f.name, json });
       log.insertAdjacentHTML('beforeend', `<li>${esc(f.name)}: ${esc(tr(r.summary))}</li>${(r.notes ?? []).map((n) => `<li>  note: ${esc(tr(n))}</li>`).join('')}`);
     } catch (err) {
       log.insertAdjacentHTML('beforeend', `<li>✘ ${esc(f.name)}: ${esc(err.message)}</li>`);
@@ -2171,6 +2178,53 @@ async function importFiles(files) {
   await loadTree();
 }
 $('importFile').onchange = (e) => importFiles([...e.target.files]);
+
+// ---------- export / import one file (*.hyperion.json): a request, or a flow with every request it runs ----------
+function saveAs(name, data) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([`${JSON.stringify(data, null, 2)}\n`], { type: 'application/json' }));
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const fileName = (name) => `${String(name).trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-') || 'export'}.hyperion.json`;
+async function exportFiles(files, name) {
+  const bundle = await api('/api/export', { files });
+  saveAs(fileName(name), bundle);
+  state.logs.push(`${new Date().toLocaleTimeString()}  ${t('Exported {name}: {n} files → your Downloads folder', { name, n: bundle.items.length })}`);
+  renderLog();
+}
+function bundleSummary(r) {
+  const parts = [];
+  if (r.flows.length) parts.push(t('{n} flow', { n: r.flows.length }));
+  if (r.requests.created.length) parts.push(t('{n} new requests', { n: r.requests.created.length }));
+  if (r.requests.same.length) parts.push(t('{n} already here', { n: r.requests.same.length }));
+  if (r.requests.renamed.length) parts.push(t('{n} differ from yours — saved alongside as …-imported', { n: r.requests.renamed.length }));
+  if (r.collections.length) parts.push(t('new collections: {list}', { list: r.collections.join(', ') }));
+  return parts.join(' · ') || t('nothing to import');
+}
+// Flows → Import: a *.hyperion.json made by Export
+const bundlePick = Object.assign(document.createElement('input'), { type: 'file', accept: '.json,application/json', hidden: true });
+document.body.append(bundlePick);
+bundlePick.onchange = async () => {
+  const f = bundlePick.files[0];
+  bundlePick.value = '';
+  if (!f) return;
+  try {
+    const r = await api('/api/import/bundle', { bundle: JSON.parse(await f.text()) });
+    state.logs.push(`${new Date().toLocaleTimeString()}  ${f.name}: ${bundleSummary(r)}`);
+    renderLog();
+    await loadTree(false);
+    if (r.flows[0]) await openFlow(r.flows[0]);
+    else if (r.requests.created[0] ?? r.requests.renamed[0]?.to) await openRequest(r.requests.created[0] ?? r.requests.renamed[0].to);
+  } catch (err) {
+    alert(tr(err.message));
+  }
+};
+$('exportReq').onclick = () => state.req && exportFiles([state.req.file], state.req.name);
+$('flowExport').onclick = () => state.flowFile && exportFiles([state.flowFile], state.flow?.name ?? $('flowName').textContent);
 const drop = $('drop');
 drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
 drop.ondragleave = () => drop.classList.remove('over');
@@ -2574,7 +2628,7 @@ function renderFlowList(q = '') {
   const flows = (state.tree.flows ?? []).filter((f) => !q || f.name.toLowerCase().includes(q));
   const g = document.createElement('div');
   g.className = 'group flows-group';
-  g.innerHTML = `<div class="group-head"><h3>Flows</h3><button class="icon-btn flow-new" title="${t('Create a new flow')}">+ Flow</button></div>` +
+  g.innerHTML = `<div class="group-head"><h3>Flows</h3><button class="icon-btn flow-import" title="${t('Import a flow or request from a .hyperion.json file')}">${t('Import')}</button><button class="icon-btn flow-new" title="${t('Create a new flow')}">+ Flow</button></div>` +
     (flows.length ? '' : t('<p class="group-empty">No flows yet — <button>create the first flow</button></p>'));
   for (const f of flows) {
     const b = document.createElement('button');
@@ -2586,6 +2640,7 @@ function renderFlowList(q = '') {
     g.append(b);
   }
   g.querySelector('.flow-new').onclick = newFlow;
+  g.querySelector('.flow-import').onclick = () => bundlePick.click();
   g.querySelector('.group-empty button')?.addEventListener('click', newFlow);
   $('tree').append(g);
 }

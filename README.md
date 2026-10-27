@@ -137,12 +137,17 @@ Auth and headers work as for other requests: WebSocket / Socket.IO send them as 
 - Protected envs (prod): the app runs mutations; `hyperion flow run` on the CLI stops at a mutation.
 - Stored as `flows/<name>.flow.yaml`; run them in CI: `hyperion flow run flows/x.flow.yaml --env test --reporter junit`
 
+## Export / import requests and flows
+
+- **Export** on a request or a flow saves one `<name>.hyperion.json` file (to Downloads): the request, or the flow with every request it runs, plus their collection / folder settings. Secrets are never included (`{{secret:…}}` references stay).
+- **Import** in the Flows section (or drop the file on the Import dialog) brings it into the open project: missing collections are created, identical requests are skipped, and a request that differs from yours is saved next to it as `…-imported` with the flow pointed at it. Your own collection settings are never overwritten.
+
 ## Import from Postman
 
 - **Postman cannot export GraphQL-type requests.** Use **Import** → "Paste cURL / GraphQL query": copy Code (`</>`) → cURL from Postman (or Copy as cURL from the browser), or just the query, paste it, and pick the collection.
   - A Bearer token in the cURL is not written to the request file: it is kept in `envs/<env>.local.env.yaml` (gitignored) as `BEARER_TOKEN` and the request uses `{{BEARER_TOKEN}}`.
   - If the collection uses `{{GQL_URL}}` and the env has none yet, `GQL_URL` is set from the cURL's URL.
-- **Read from Postman desktop:** Import → **Read from Postman** lists the GraphQL requests stored by the Postman app on this computer and imports the ones you pick.
+- **Read from Postman desktop:** Import → **Read from Postman** lists the GraphQL **and REST** requests stored by the Postman app on this computer and imports the collections you pick. REST requests go to a REST collection of the same name (or "<name> (REST)" next to its GraphQL one) with method, URL, headers, auth, JSON / text / form bodies and scripts. Passwords, secrets, tokens and API keys typed into a request move to `secrets.local.yaml`. Importing again updates requests in place — matched by Postman id across the project (renamed or moved collections too), or by name + method + URL for ones from a Postman export. Requests Postman has only listed by name (never opened on this computer) cannot be read; open them in Postman once and import again.
 - Collection files: GraphQL requests (GraphQL body or raw JSON with `query`) → `GraphQLRequest`, everything else → `HttpRequest`; folders stay folders; bearer / basic / apikey auth; `pm.*` scripts keep working (shim: `pm.test`, chai-style `pm.expect`, `pm.response`, `pm.environment`, `pm.sendRequest`).
 - Environments: secret-type variables, or names like password / token / secret / apikey, move to `secrets.local.yaml` and are referenced as `{{secret:NAME}}`; envs whose name contains "prod" become protected.
 - Not supported: collection / folder-level scripts, form-data bodies, the OAuth2 flow (converted to bearer `{{ACCESS_TOKEN}}`).
@@ -190,8 +195,8 @@ Variable precedence (low → high): `hyperion.yaml` < collection / folder / requ
 npm test
 ```
 
-27 tests: schema fallback (including borrowing dev's schema), request-level and per-env auth, the schema explorer, flows, cURL paste, token renewal / 401 retry / single flight, Keycloak, schema drift, the prod guard, Postman import, the pm shim, creating / moving / splitting collections, WebSocket / Socket.IO / gRPC, REST hosts as env variables, scripts written in the app, and SOAP (WSDL import, 1.1 / 1.2, faults).
+28 tests: schema fallback (including borrowing dev's schema), request-level and per-env auth, the schema explorer, flows, cURL paste, token renewal / 401 retry / single flight, Keycloak, schema drift, the prod guard, Postman import, the pm shim, creating / moving / splitting collections, WebSocket / Socket.IO / gRPC, REST hosts as env variables, scripts written in the app, SOAP (WSDL import, 1.1 / 1.2, faults), and export / import of flows with their requests.
 
 ## About
 
-Version 1.1.0 (V.01.01.00) · developer: soulrose
+Version 1.2.0 (V.01.02.00) · developer: soulrose

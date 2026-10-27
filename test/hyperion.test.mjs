@@ -854,3 +854,42 @@ test('SOAP: WSDL describe (imported XSD), import into a soap collection, run 1.1
     await mocks2.close?.();
   }
 });
+
+test('export / import: a flow with its requests as one *.hyperion.json; no secrets; changed requests saved alongside', async () => {
+  const { exportBundle, importBundle } = await import('../lib/bundle.mjs');
+  const { createFlow } = await import('../lib/flow.mjs');
+  const mk = async (name) => {
+    const d = await mkdtemp(path.join(tmpdir(), `hyperion-bundle-${name}-`));
+    await writeSample(d, { prodUrl: 'http://prod.example', devUrl: 'http://dev.example' });
+    return loadProject(d);
+  };
+  const a = await mk('a');
+  const flowFile = await createFlow(a, 'Patient check');
+  const steps = [{ request: 'collections/sample/patient/get-patient.req.yaml' }, { request: 'collections/sample/pharmacy/create-prescription.req.yaml' }];
+  await writeFile(path.join(a.root, flowFile), YAML.stringify({ apiVersion: 'hyperion/v3', kind: 'Flow', metadata: { name: 'Patient check' }, steps }));
+  const bundle = await exportBundle(a, [flowFile]);
+  const paths = bundle.items.map((i) => i.path);
+  assert.ok(paths.includes(flowFile) && paths.includes(steps[0].request) && paths.includes(steps[1].request));
+  assert.ok(paths.includes('collections/sample/_collection.yaml'));
+  assert.ok(!paths.some((p) => /secrets|\.local\./.test(p)));
+  assert.ok(!JSON.stringify(bundle).includes('dev-key')); // the sample's secret value
+
+  // a fresh project gets everything
+  const bDir = await mkdtemp(path.join(tmpdir(), 'hyperion-bundle-b-'));
+  await writeFile(path.join(bDir, 'hyperion.yaml'), 'apiVersion: hyperion/v3\nkind: Project\nname: B\n');
+  const b = await loadProject(bDir);
+  const r1 = await importBundle(b, bundle);
+  assert.deepEqual(r1.collections, ['collections/sample']);
+  assert.equal(r1.requests.created.length, 2);
+  assert.deepEqual(r1.flows, [flowFile]);
+
+  // a project with a changed copy keeps it; the imported one goes alongside and the flow points at it
+  const c = await mk('c');
+  await writeFile(path.join(c.root, steps[0].request), 'apiVersion: hyperion/v3\nkind: GraphQLRequest\nmetadata: { name: Mine }\npayload: { query: "{ x }" }\n');
+  const r2 = await importBundle(c, bundle);
+  assert.equal(r2.requests.renamed[0].to, 'collections/sample/patient/get-patient-imported.req.yaml');
+  assert.equal(r2.requests.same.length, 1);
+  const flow = YAML.parse(await readFile(path.join(c.root, r2.flows[0]), 'utf8'));
+  assert.equal(flow.steps[0].request, 'collections/sample/patient/get-patient-imported.req.yaml');
+  await assert.rejects(importBundle(c, { kind: 'HyperionExport', items: [{ path: '../evil.req.yaml', content: 'x' }] }));
+});

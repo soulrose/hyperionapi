@@ -3,6 +3,8 @@
 // numbered in order of appearance in the English. More specific templates come first
 // so that, with first-match-wins lookup, they win over shorter variants.
 export const SERVER_TH = [
+  ["Not a request or flow file: {0}", "ไม่ใช่ไฟล์ request หรือ flow: {0}"],
+  ["Not a Hyperion export file (*.hyperion.json)", "ไม่ใช่ไฟล์ export ของ Hyperion (*.hyperion.json)"],
   ["{0} REST requests came without headers / body (Postman had not loaded them) — open them in Postman and import again to get the rest", "request แบบ REST {0} ตัวมาโดยไม่มี header / body (Postman ยังไม่ได้โหลดไว้) — เปิดใน Postman แล้ว import ใหม่เพื่อเอาส่วนที่เหลือ"],
   ["{0}: {1} moved to secrets.local.yaml as {2}", "{0}: ย้าย {1} ไปเก็บใน secrets.local.yaml ชื่อ {2}"],
   ["{0}: form-data body is not supported — left out", "{0}: body แบบ form-data ยังไม่รองรับ — ไม่ได้นำเข้า"],

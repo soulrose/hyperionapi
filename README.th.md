@@ -134,6 +134,12 @@ request แบบนี้เปิดค้างไว้ในแอป — �
 - env ที่ protected (prod): ในแอปรัน mutation ได้เลย; `hyperion flow run` บน CLI จะหยุดที่ mutation
 - เก็บเป็น `flows/<ชื่อ>.flow.yaml` และรันบน CI ได้: `hyperion flow run flows/x.flow.yaml --env test --reporter junit`
 
+## Export / import request และ flow
+
+- ปุ่ม **Export** ที่ request หรือ flow บันทึกเป็นไฟล์เดียว `<ชื่อ>.hyperion.json` (ลงโฟลเดอร์ Downloads): request นั้น หรือ flow พร้อมทุก request ที่ใช้ รวมตั้งค่าของ collection / โฟลเดอร์ · ไม่รวม secret (เก็บไว้เป็น `{{secret:…}}`)
+- ปุ่ม **Import** ในส่วน Flows (หรือลากไฟล์ใส่หน้าต่าง Import) นำเข้าโปรเจกต์ที่เปิดอยู่: collection ที่ยังไม่มีจะถูกสร้าง, request ที่เหมือนเดิมข้ามไป, request ที่ต่างจากของเดิมบันทึกแยกเป็น `…-imported` และ flow ชี้ไปที่ตัวใหม่ · ตั้งค่า collection เดิมของคุณไม่ถูกทับ
+- **อ่านจาก Postman desktop** ได้ทั้ง GraphQL และ REST — REST ไปอยู่ใน collection แบบ REST ชื่อเดียวกัน (หรือ "<ชื่อ> (REST)") พร้อม method, URL, headers, auth, body และ script · รหัสผ่าน / secret / token / API key ที่พิมพ์ไว้ย้ายไป `secrets.local.yaml` · import ซ้ำจะอัปเดตของเดิม (จับคู่ด้วย id ของ Postman ทั้งโปรเจกต์ แม้ collection ถูกเปลี่ยนชื่อ)
+
 ## Import จาก Postman
 
 - **request แบบ GraphQL ของ Postman export ไม่ได้** (ข้อจำกัดของ Postman) → **Import** → "วาง cURL / GraphQL query": คัดลอก Code (`</>`) → cURL จาก Postman (หรือ Copy as cURL จากเบราว์เซอร์) หรือคัดลอกแค่ query จากแท็บ Query แล้ววาง เลือก collection ที่จะใส่
