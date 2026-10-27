@@ -6,6 +6,17 @@
   <title>Hyperion API</title>
   <link rel="icon" href="icon.svg?v=2" type="image/svg+xml">
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" id="themeCss">
+  <!-- the saved theme (themes.js) before the page draws, so it does not flash the default first -->
+  <script>
+    try {
+      const id = localStorage.getItem('hyperion.theme');
+      if (id && id !== 'modern' && /^[a-z0-9-]+$/.test(id)) {
+        document.documentElement.dataset.theme = id;
+        document.getElementById('themeCss').href = `themes/${id}.css`;
+      }
+    } catch {}
+  </script>
 </head>
 <body>
   <header class="top">

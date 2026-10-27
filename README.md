@@ -28,6 +28,8 @@ npm run shortcut        # Windows: puts a "Hyperion API" icon on the Desktop
 
 **Language:** the UI is English by default. Switch to Thai from the project menu → **Settings** → Language: ไทย (remembered on this computer). Thai text lives in `public/i18n.js` (UI) and `public/i18n-server.js` (server messages).
 
+**Themes:** Settings → **Theme**: Modern (default) or Frutiger Aero (Vista) — glass panes on a sky background, glossy buttons. Applied at once and remembered. To add a theme, write `public/themes/<id>.css` (rules under `html[data-theme="<id>"]`) and add one line to the list in `public/themes.js`.
+
 **Fonts:** the same **Settings** dialog sets the UI font, text size (90–125%), code font and code size. Only fonts installed on this computer are listed; changes apply at once and are remembered. Thai falls back to a Thai font when the chosen one has no Thai letters.
 
 ## Projects

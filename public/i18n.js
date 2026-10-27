@@ -8,6 +8,7 @@ export const lang = read() === 'th' ? 'th' : 'en';
 
 // English text (the key) → Thai
 const TH = {
+  "Theme": "ธีม",
   // Settings: fonts
   "UI font": "ฟอนต์ของแอป",
   "Text size": "ขนาดตัวอักษร",

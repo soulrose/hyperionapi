@@ -1,5 +1,6 @@
 // Hyperion UI — plain JS, no build step.
 import { t, tr, applyDom, lang, setLang } from './i18n.js';
+import { THEMES, currentTheme, applyTheme } from './themes.js';
 
 applyDom();
 
@@ -332,6 +333,7 @@ async function showSettings() {
     title: t('Settings'),
     fields: [
       { name: 'lang', label: t('Language'), type: 'seg', showLabel: true, value: lang, options: [{ value: 'en', label: 'English' }, { value: 'th', label: 'ไทย' }] },
+      { name: 'theme', label: t('Theme'), type: 'select', value: currentTheme(), options: THEMES.map((th) => ({ value: th.id, label: th.name })) },
       { name: 'uiFont', label: t('UI font'), type: 'select', value: p.uiFont, options: fontOptions(UI_FONTS) },
       { name: 'uiSize', label: t('Text size'), type: 'seg', showLabel: true, value: p.uiSize, options: ['90', '100', '110', '125'].map((v) => ({ value: v, label: `${v}%` })) },
       { name: 'codeFont', label: t('Code font'), type: 'select', value: p.codeFont, options: fontOptions(CODE_FONTS) },
@@ -347,6 +349,7 @@ async function showSettings() {
         // storage blocked: still applied for this session
       }
       applyFonts(next);
+      if (form.elements.theme.value !== currentTheme()) applyTheme(form.elements.theme.value);
       const l = form.elements.lang.value;
       if (l && l !== lang) setLang(l);
     },

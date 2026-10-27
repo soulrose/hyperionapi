@@ -1,0 +1,185 @@
+/* Frutiger Aero (Windows Vista): sky and grass, clear glass panes with a bright edge, glossy two-tone buttons,
+   capsule tabs. Always light. Loaded on top of app.css (themes.js); every rule is under html[data-theme="aero"]. */
+html[data-theme="aero"] {
+  color-scheme: light;
+  --bg: #6fc3ec;
+  --glass: rgba(255, 255, 255, .5);
+  --glass-strong: rgba(255, 255, 255, .86);
+  --edge: rgba(255, 255, 255, .85);
+  --outline: rgba(0, 45, 90, .38);
+  --shadow: 0 6px 24px rgba(0, 40, 90, .22);
+  --shadow-pop: 0 10px 40px rgba(0, 35, 80, .35);
+  --ink: #0d2a44;
+  --ink-2: #33536e;
+  --ink-3: #6a86a0;
+  --line: rgba(60, 110, 160, .35);
+  --line-2: rgba(60, 110, 160, .2);
+  --fill: rgba(255, 255, 255, .55);
+  --fill-2: rgba(255, 255, 255, .85);
+  --accent: #1673c9;
+  --accent-2: #0d5ba5;
+  --accent-soft: rgba(22, 115, 201, .14);
+  --accent-ring: rgba(46, 150, 240, .45);
+  --exec: #d8382a;
+  --exec-2: #b62416;
+  --exec-soft: rgba(216, 56, 42, .12);
+  --schema: #c27a0e;
+  --schema-soft: rgba(230, 160, 30, .16);
+  --pass: #2a9a35;
+  --pass-soft: rgba(60, 170, 60, .16);
+  --code-bg: rgba(255, 255, 255, .92);
+  --input-bg: #fff;
+  --tok-key: #0b57b5;
+  --tok-str: #a4410f;
+  --tok-num: #1d8a2c;
+  --tok-var: #b45309;
+  --tok-com: #7d95aa;
+  --tok-type: #7a3fc0;
+  --sans: "Segoe UI", "Leelawadee UI", Tahoma, system-ui, sans-serif;
+  --r: 8px;
+  --r-ctl: 4px;
+}
+
+/* sky, grass hills and two light ribbons */
+html[data-theme="aero"] body {
+  background:
+    radial-gradient(120% 60% at 12% 112%, #73c94e 0 22%, transparent 23%),
+    radial-gradient(90% 55% at 88% 118%, #93d763 0 24%, transparent 25%),
+    radial-gradient(60% 45% at 82% 6%, rgba(255, 255, 255, .55), transparent 60%),
+    radial-gradient(70% 60% at 8% 0%, rgba(150, 232, 255, .75), transparent 60%),
+    linear-gradient(180deg, #0b4f8a 0%, #1a8fd6 42%, #7fd3f7 78%, #c8f0ff 100%) fixed;
+}
+html[data-theme="aero"] body::before {
+  inset: 0; filter: blur(2px); opacity: .5;
+  background:
+    linear-gradient(168deg, transparent 22%, rgba(255, 255, 255, .55) 30%, rgba(160, 255, 225, .4) 34%, transparent 42%),
+    linear-gradient(188deg, transparent 52%, rgba(200, 240, 255, .55) 58%, transparent 66%);
+}
+
+/* glass panes: clear, a bright inner edge and a dark hairline outside */
+html[data-theme="aero"] .top,
+html[data-theme="aero"] .rail,
+html[data-theme="aero"] .guard,
+html[data-theme="aero"] .work > *,
+html[data-theme="aero"] dialog,
+html[data-theme="aero"] .menu,
+html[data-theme="aero"] .welcome {
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 0 0 1px var(--outline), var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+/* the header: Vista's glass title bar with a sheen on the top half */
+html[data-theme="aero"] .top {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(225, 242, 255, .58) 50%, rgba(195, 228, 250, .5) 51%, rgba(235, 248, 255, .66));
+}
+html[data-theme="aero"] .work > * { background: rgba(255, 255, 255, .7); }
+html[data-theme="aero"] .side { background: rgba(240, 250, 255, .62); }
+html[data-theme="aero"] dialog, html[data-theme="aero"] .menu { background: rgba(245, 251, 255, .93); }
+html[data-theme="aero"] dialog h2 { color: var(--accent-2); }
+html[data-theme="aero"] .brand img { border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 40, 90, .4); }
+
+/* glossy buttons: light top half, a hard line at the middle, darker lower half */
+html[data-theme="aero"] .ghost {
+  border: 1px solid #7a9ebf; color: var(--ink);
+  background: linear-gradient(180deg, #fefefe, #eef4f9 48%, #dbe7f1 49%, #e9f2f9);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 40, 80, .18);
+}
+html[data-theme="aero"] .ghost:hover:not(:disabled) {
+  border-color: #3c7fb1; background: linear-gradient(180deg, #eaf7ff, #c6e8fb 48%, #a8d8f4 49%, #c8eafc);
+}
+html[data-theme="aero"] .ghost-danger { color: var(--exec); }
+html[data-theme="aero"] .ghost-danger:hover:not(:disabled) { color: #fff; border-color: #9c1c10; background: linear-gradient(180deg, #ffb3a6, #e2412f 49%, #c02a17 50%, #ea6a52); }
+html[data-theme="aero"] .primary {
+  border: 1px solid #0b4f8f; text-shadow: 0 1px 1px rgba(0, 40, 90, .45);
+  background: linear-gradient(180deg, #9fe1ff, #2c9be8 49%, #1270c4 50%, #3fa6ef);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75), 0 1px 4px rgba(0, 50, 110, .4);
+}
+html[data-theme="aero"] .primary:hover:not(:disabled) { background: linear-gradient(180deg, #b8eaff, #45aef0 49%, #1a80d6 50%, #5ab6f5); }
+html[data-theme="aero"] .send, html[data-theme="aero"] .danger {
+  border: 1px solid #8e1a0e; border-radius: 16px; text-shadow: 0 1px 1px rgba(90, 10, 0, .45);
+  background: linear-gradient(180deg, #ffb2a4, #e2412f 49%, #c02a17 50%, #ea6a52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65), 0 0 0 2px rgba(255, 255, 255, .5), 0 3px 10px rgba(150, 20, 0, .4);
+}
+html[data-theme="aero"] .send:hover:not(:disabled), html[data-theme="aero"] .danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffc6bb, #ec5340 49%, #cf3420 50%, #f27f68);
+}
+html[data-theme="aero"] .icon-btn:hover { background: rgba(255, 255, 255, .8); box-shadow: 0 0 0 1px #8fb6d8; }
+
+/* env switch: a sunken capsule, the picked env a glossy blue (prod: glossy red) pill */
+html[data-theme="aero"] .envs {
+  border-radius: 14px; background: rgba(255, 255, 255, .4); border: 1px solid rgba(60, 110, 160, .45);
+  box-shadow: inset 0 1px 3px rgba(0, 40, 90, .25);
+}
+html[data-theme="aero"] .envs button { border-radius: 12px; }
+html[data-theme="aero"] .envs button[aria-checked="true"] {
+  color: #fff; text-shadow: 0 1px 1px rgba(0, 40, 90, .5);
+  background: linear-gradient(180deg, #9fe1ff, #2c9be8 49%, #1270c4 50%, #3fa6ef);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75), 0 1px 3px rgba(0, 50, 110, .4);
+}
+html[data-theme="aero"] .envs button[aria-checked="true"].protected {
+  background: linear-gradient(180deg, #ffb2a4, #e2412f 49%, #c02a17 50%, #ea6a52);
+}
+
+/* the connection rail and its coloured edges */
+html[data-theme="aero"] .rail { background: rgba(255, 255, 255, .66); }
+html[data-theme="aero"] .lane::before { width: 4px; }
+html[data-theme="aero"] .lane-exec::before { background: linear-gradient(180deg, #ff9a86, #d4321f); }
+html[data-theme="aero"] .lane-schema::before { background: linear-gradient(180deg, #ffe08a, #e09a12); }
+html[data-theme="aero"] .method {
+  color: #fff; border-radius: 10px; text-shadow: 0 1px 1px rgba(0, 0, 0, .35);
+  background: linear-gradient(180deg, #ffb2a4, #e2412f 50%, #c02a17 51%, #ea6a52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+html[data-theme="aero"] input.lane-url { border-color: #8fb2cf; box-shadow: inset 0 1px 3px rgba(0, 40, 80, .18); }
+
+/* inputs: white with a sunken edge */
+html[data-theme="aero"] .filter,
+html[data-theme="aero"] .form-panel input,
+html[data-theme="aero"] .form-panel select,
+html[data-theme="aero"] dialog input:not([type=file]):not([type=checkbox]):not([type=radio]),
+html[data-theme="aero"] dialog select,
+html[data-theme="aero"] dialog textarea {
+  border: 1px solid #9bbbd6; background: #fff; box-shadow: inset 0 1px 3px rgba(0, 40, 80, .15);
+}
+
+/* sidebar: the open request is a Vista selection, section titles in caps */
+html[data-theme="aero"] .req { border: 1px solid transparent; border-radius: 4px; }
+html[data-theme="aero"] .req:hover { background: rgba(255, 255, 255, .7); border-color: #b9d7f0; }
+html[data-theme="aero"] .req[aria-current="true"] {
+  color: var(--ink); border-color: #7eb4ea;
+  background: linear-gradient(180deg, #eaf6ff, #cfe8fd 50%, #bfe0fb 51%, #d7edff);
+  box-shadow: inset 0 1px 0 #fff;
+}
+html[data-theme="aero"] .side-section { text-transform: uppercase; color: var(--accent-2); }
+html[data-theme="aero"] .side-section::after { background: linear-gradient(90deg, rgba(60, 120, 180, .45), transparent); }
+
+/* pane headers and tabs: raised tabs on a light band */
+html[data-theme="aero"] .pane-head { background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(232, 244, 253, .75)); }
+html[data-theme="aero"] .tabs { padding-top: 6px; background: linear-gradient(180deg, rgba(220, 238, 252, .75), rgba(255, 255, 255, .55)); border-bottom-color: #a9c7e0; }
+html[data-theme="aero"] .tabs button { border: 1px solid transparent; border-bottom: 0; border-radius: 5px 5px 0 0; }
+html[data-theme="aero"] .tabs button[aria-selected="true"] {
+  background: linear-gradient(180deg, #fff, #f3f9fe); border-color: #a9c7e0; margin-bottom: -1px;
+  box-shadow: inset 0 1px 0 #fff;
+}
+html[data-theme="aero"] .tabs button[aria-selected="true"]::after { display: none; }
+html[data-theme="aero"] .sub-head { background: linear-gradient(180deg, #f2f9ff, #e2f0fb); border-top-color: #c6dcee; }
+
+/* status capsules */
+html[data-theme="aero"] .status.ok {
+  color: #fff; text-shadow: 0 1px 1px rgba(0, 60, 0, .4);
+  background: linear-gradient(180deg, #b6f0a0, #3fae2a 50%, #2a8f1a 51%, #58c23f);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+html[data-theme="aero"] .status.err {
+  color: #fff; text-shadow: 0 1px 1px rgba(90, 10, 0, .4);
+  background: linear-gradient(180deg, #ffb2a4, #e2412f 50%, #c02a17 51%, #ea6a52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+
+/* segmented choices in dialogs and the realtime bar */
+html[data-theme="aero"] .seg { background: rgba(255, 255, 255, .45); border: 1px solid rgba(60, 110, 160, .4); box-shadow: inset 0 1px 3px rgba(0, 40, 90, .2); }
+html[data-theme="aero"] .seg label:has(input:checked) {
+  color: #fff; text-shadow: 0 1px 1px rgba(0, 40, 90, .5);
+  background: linear-gradient(180deg, #9fe1ff, #2c9be8 49%, #1270c4 50%, #3fa6ef);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75);
+}
