@@ -643,3 +643,7 @@ button.brand:hover { background: var(--fill); }
 .snippets { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px 8px; }
 .t-cmt { color: var(--ink-3); font-style: italic; }
 #tab-tests .empty button { margin-top: 10px; }
+
+/* dropdown lists are drawn by Windows: give the options a solid theme background so the text stays readable */
+select option { background-color: var(--bg); color: var(--ink); }
+select option:checked { background-color: var(--accent); color: #fff; }

@@ -327,7 +327,7 @@ function fontInstalled(name) {
 async function showSettings() {
   toggleMenu(false);
   const p = fontPrefs();
-  const fontOptions = (list) => [{ value: '', label: t('Default') }, ...list.filter(fontInstalled).map((f) => ({ value: f, label: f }))];
+  const fontOptions = (list) => [{ value: '', label: t('Default') }, ...list.filter(fontInstalled).map((f) => ({ value: f, label: f, font: f }))]; // each name shown in its own font
   await askForm({
     title: t('Settings'),
     fields: [
@@ -734,7 +734,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
   $('formError').hidden = true;
   const fieldHtml = (f) => {
       if (f.type === 'select') {
-        return `<label>${esc(f.label)}<select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}"${o.value === f.value ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select></label>`;
+        return `<label>${esc(f.label)}<select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}"${o.value === f.value ? ' selected' : ''}${o.font ? ` style="font-family: &quot;${esc(o.font)}&quot;"` : ''}>${esc(o.label)}</option>`).join('')}</select></label>`;
       }
       if (f.type === 'seg') {
         return `${f.showLabel ? `<div class="kv-label">${esc(f.label)}</div>` : ''}<div class="seg" role="radiogroup" aria-label="${esc(f.label)}">${f.options.map((o) => `<label><input type="radio" name="${f.name}" value="${esc(o.value)}"${o.value === f.value ? ' checked' : ''}>${esc(o.label)}</label>`).join('')}</div>`;
