@@ -926,3 +926,65 @@ test('project export / import: everything but secrets and local tokens, into a n
   assert.ok((await readFile(path.join(dest, 'collections/sample/patient/get-patient.req.yaml'), 'utf8')).includes('GetPatient'));
   await assert.rejects(importProject(dest, bundle), /not empty/);
 });
+
+test('SSL certificate verification: a self-signed HTTPS / WSS server is refused, then accepted with verification off', async () => {
+  const https = await import('node:https');
+  const { createHash } = await import('node:crypto');
+  const { send } = await import('../lib/http.mjs');
+  const { openWebSocket, closeSession } = await import('../lib/realtime.mjs');
+  const fx = (f) => readFile(new URL(`./fixtures/${f}`, import.meta.url));
+  const server = https.createServer({ key: await fx('self-signed.key'), cert: await fx('self-signed.crt') }, (req, res) => res.end('{"ok":true}'));
+  // a tiny wss endpoint: answer the upgrade, send one text frame
+  server.on('upgrade', (req, socket) => {
+    const accept = createHash('sha1').update(`${req.headers['sec-websocket-key']}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+    socket.write(Buffer.from([0x81, 2, 0x68, 0x69])); // "hi"
+    socket.on('error', () => {});
+  });
+  // keep-alive and upgraded sockets would keep the test process running after server.close()
+  const sockets = new Set();
+  server.on('secureConnection', (s) => sockets.add(s));
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const url = `https://127.0.0.1:${server.address().port}`;
+  const saved = process.env.HYPERION_SSL_VERIFY;
+  const wsFirst = async () => {
+    const s = openWebSocket({ url: url.replace('https', 'wss') });
+    for (let i = 0; i < 40 && !s.log.some((e) => e.dir === 'in' || e.error || e.state === 'closed'); i++) await new Promise((r) => setTimeout(r, 50));
+    closeSession(s.id);
+    return s.log.find((e) => e.dir === 'in')?.data ?? null;
+  };
+  try {
+    delete process.env.HYPERION_SSL_VERIFY;
+    await assert.rejects(send({ url }), /failed/);
+    assert.equal(await wsFirst(), null);
+    process.env.HYPERION_SSL_VERIFY = 'false';
+    assert.equal((await send({ url })).json.ok, true);
+    assert.equal(await wsFirst(), 'hi');
+  } finally {
+    if (saved === undefined) delete process.env.HYPERION_SSL_VERIFY;
+    else process.env.HYPERION_SSL_VERIFY = saved;
+    for (const s of sockets) s.destroy();
+    server.close();
+  }
+});
+
+test('GraphQL: an operationName the edited query no longer defines is replaced by the query\'s own', async () => {
+  const { effectiveOperationName } = await import('../lib/runner.mjs');
+  const q = 'mutation CreateJob($n: String!) { createJob(name: $n) { success } }';
+  assert.equal(effectiveOperationName(q, 'Test'), 'CreateJob');
+  assert.equal(effectiveOperationName(q, undefined), 'CreateJob');
+  assert.equal(effectiveOperationName('query A { a } query B { b }', 'B'), 'B');
+  assert.equal(effectiveOperationName('{ a }', 'Old'), undefined);
+});
+
+test('tokenEndpoint auth: an env with none of the login variables sends without a token', async () => {
+  const { applyAuth, keycloakAuth } = await import('../lib/auth.mjs');
+  const vars = new Map(Object.entries({ GQL_URL: 'http://localhost:8080/graphql' }));
+  const req = { url: 'http://localhost:8080/graphql', headers: {} };
+  const warnings = await applyAuth(keycloakAuth(), req, { vars, env: { name: 'local' } });
+  assert.equal(req.headers.Authorization, undefined);
+  assert.match(warnings[0], /No login for env local/);
+  // some set, some not: still an error naming what is missing
+  vars.set('KC_TOKEN_URL', 'http://127.0.0.1:1/token');
+  await assert.rejects(applyAuth(keycloakAuth(), { url: req.url, headers: {} }, { vars, env: { name: 'local' }, runtime: {} }), /unresolved/);
+});

@@ -32,6 +32,8 @@ npm run shortcut        # Windows: puts a "Hyperion API" icon on the Desktop
 
 **Fonts:** the same **Settings** dialog sets the UI font, text size (90–125%), code font and code size. Only fonts installed on this computer are listed; changes apply at once and are remembered. Thai falls back to a Thai font when the chosen one has no Thai letters.
 
+**SSL certificate verification:** Settings → on by default. Turn it off to accept self-signed / internal-CA certificates for every kind of request (HTTP, logins, WebSocket / Socket.IO, gRPC); the top bar shows "SSL check off" while it is off. Kept in `~/.hyperion/settings.json`; `HYPERION_SSL_VERIFY=false` does the same for the CLI / CI.
+
 ## Projects
 
 - Click the project name next to the logo → pick a recent project, **Open folder…** (paste the path of a folder with `hyperion.yaml`) or **New project…**
@@ -105,7 +107,7 @@ After that there is nothing to do: before each send, a token about to expire (30
 
 ## Other JSON logins
 
-Auth: **Other login (JSON)** in Settings, or in `_collection.yaml` (an example is in the file as a comment): `execution.auth.type: tokenEndpoint`. Before each send, a token expiring within `skewSeconds` (60 s) is renewed via the refresh endpoint, else by logging in again; `ACCESS_TOKEN`, `REFRESH_TOKEN`, `TOKEN_EXPIRES_AT` are written to `envs/<env>.local.env.yaml` (gitignored). A 401 (token revoked) renews and retries once; parallel requests share one renewal.
+Auth: **Other login (JSON)** in Settings, or in `_collection.yaml` (an example is in the file as a comment): `execution.auth.type: tokenEndpoint`. Before each send, a token expiring within `skewSeconds` (60 s) is renewed via the refresh endpoint, else by logging in again; `ACCESS_TOKEN`, `REFRESH_TOKEN`, `TOKEN_EXPIRES_AT` are written to `envs/<env>.local.env.yaml` (gitignored). A 401 (token revoked) renews and retries once; parallel requests share one renewal. An env with none of the login's variables set (e.g. `local` without `KC_*`) sends without a token, like Postman, and says so in the response.
 
 ## WebSocket, Socket.IO and gRPC
 
@@ -202,4 +204,4 @@ npm test
 
 ## About
 
-Version 1.2.0 (V.01.02.00) · developer: soulrose
+Version 1.3.0 (V.01.03.00) · developer: soulrose

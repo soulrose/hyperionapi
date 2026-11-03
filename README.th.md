@@ -27,6 +27,8 @@
 
 แก้อะไรก็บันทึกเอง: URL ในแถบแดง, query, variables, Authorization, Headers, flow, หน้าต่าง env และตั้งค่า collection — ไม่มีปุ่มบันทึก (Ctrl+S บันทึกทันที)
 
+**ตรวจ SSL certificate:** Settings → เปิดไว้เป็นค่าเริ่มต้น · ปิดเพื่อยอมรับ certificate แบบ self-signed / CA ภายใน ทุกชนิด request (HTTP, login, WebSocket / Socket.IO, gRPC) แถบบนจะขึ้น "SSL check off" ตอนปิด · เก็บใน `~/.hyperion/settings.json` · ใช้ `HYPERION_SSL_VERIFY=false` กับ CLI / CI ได้
+
 ## หลายโปรเจกต์
 
 - กดชื่อโปรเจกต์ข้างโลโก้ → เลือกโปรเจกต์ที่เคยเปิด, **เปิดโฟลเดอร์…** (วาง path ของโฟลเดอร์ที่มี `hyperion.yaml`) หรือ **สร้างโปรเจกต์ใหม่…**

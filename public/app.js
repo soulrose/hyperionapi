@@ -441,12 +441,17 @@ function fontInstalled(name) {
   return ['monospace', 'serif'].some((base) => w(`"${name}", ${base}`) !== w(base));
 }
 
+// the top bar says so while SSL certificate verification is off
+const paintSsl = (on) => ($('sslOff').hidden = on !== false);
+api('/api/settings').then((s) => paintSsl(s.sslVerify)).catch(() => {});
+
 async function showSettings() {
   toggleMenu(false);
   const p = fontPrefs();
   const fontOptions = (list) => [{ value: '', label: t('Default') }, ...list.filter(fontInstalled).map((f) => ({ value: f, label: f, font: f }))]; // each name shown in its own font
   const envList = state.tree?.envs ?? [];
   const hidden = hiddenEnvs();
+  const server = await api('/api/settings');
   const result = await askForm({
     title: t('Settings'),
     actions: {
@@ -461,6 +466,14 @@ async function showSettings() {
     fields: [
       { name: 'lang', label: t('Language'), type: 'seg', showLabel: true, value: lang, options: [{ value: 'en', label: 'English' }, { value: 'th', label: 'ไทย' }] },
       { name: 'theme', label: t('Theme'), type: 'select', value: currentTheme(), options: THEMES.map((th) => ({ value: th.id, label: th.name })) },
+      {
+        name: 'sslVerify',
+        type: 'check',
+        switch: true,
+        label: t('SSL certificate verification'),
+        hint: [t('Off: self-signed and internal certificates are accepted — only for test servers you trust'), server.globalTlsOff && t('This computer sets NODE_TLS_REJECT_UNAUTHORIZED=0, which turns checks off for every Node program — Hyperion follows this switch instead')].filter(Boolean).join(' · '),
+        value: server.sslVerify,
+      },
       { name: 'uiFont', label: t('UI font'), type: 'select', value: p.uiFont, options: fontOptions(UI_FONTS) },
       { name: 'uiSize', label: t('Text size'), type: 'seg', showLabel: true, value: p.uiSize, options: ['90', '100', '110', '125'].map((v) => ({ value: v, label: `${v}%` })) },
       { name: 'codeFont', label: t('Code font'), type: 'select', value: p.codeFont, options: fontOptions(CODE_FONTS) },
@@ -485,6 +498,10 @@ async function showSettings() {
       }
       applyFonts(next);
       if (form.elements.theme.value !== currentTheme()) applyTheme(form.elements.theme.value);
+      if (form.elements.sslVerify.checked !== server.sslVerify) {
+        server.sslVerify = form.elements.sslVerify.checked;
+        api('/api/settings', { sslVerify: server.sslVerify }).then((r) => paintSsl(r.sslVerify));
+      }
       // env ticks: at least one stays shown
       if (envList.length) {
         const off = envList.filter((e) => !form.elements[`envShow_${e.name}`]?.checked).map((e) => e.name);
@@ -901,6 +918,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
         return `<label>${esc(f.label)}<textarea name="${f.name}" rows="${f.rows ?? 4}" spellcheck="false">${esc(f.value ?? '')}</textarea></label>`;
       }
       if (f.type === 'check') {
+        if (f.switch) return `<label class="switch-row"><span>${esc(f.label)}${f.hint ? `<small>${esc(f.hint)}</small>` : ''}</span><input type="checkbox" role="switch" name="${f.name}"${f.value ? ' checked' : ''}></label>`;
         return `<label class="check"><input type="checkbox" name="${f.name}"${f.value ? ' checked' : ''}> ${esc(f.label)}</label>`;
       }
       if (f.type === 'kv') {
@@ -1667,7 +1685,8 @@ $('soapBar').addEventListener('change', scheduleSave);
 function currentOp() {
   const q = $('query').value;
   const m = q.match(/^\s*(?:#[^\n]*\n\s*)*(query|mutation|subscription)\b\s*([A-Za-z_]\w*)?/);
-  return { type: m?.[1] ?? 'query', name: state.req.operationName ?? m?.[2] ?? state.req.name };
+  // the operation written in the query wins over a saved operationName from before the query was edited
+  return { type: m?.[1] ?? 'query', name: m?.[2] ?? state.req.operationName ?? state.req.name };
 }
 
 async function send() {
