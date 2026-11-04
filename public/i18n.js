@@ -9,6 +9,15 @@ export const lang = read() === 'th' ? 'th' : 'en';
 // English text (the key) → Thai
 const TH = {
   "This computer sets NODE_TLS_REJECT_UNAUTHORIZED=0, which turns checks off for every Node program — Hyperion follows this switch instead": "เครื่องนี้ตั้ง NODE_TLS_REJECT_UNAUTHORIZED=0 ไว้ ซึ่งปิดการตรวจใบรับรองของทุกโปรแกรม Node — Hyperion ใช้สวิตช์นี้แทน",
+  // send every operation in the box
+  "Send all {n}": "ส่งทั้ง {n} operation",
+  "Send every operation in the box, one at a time — stops at the first error": "ส่งทุก operation ในช่องทีละอัน — หยุดเมื่อเจอ error อันแรก",
+  "Send {n} operations?": "ส่ง {n} operation?",
+  "To {env} — real data · these mutations change data: {list}": "ไปที่ {env} — ข้อมูลจริง · mutation เหล่านี้แก้ข้อมูล: {list}",
+  "Not sent": "ไม่ได้ส่ง",
+  "Sending…": "กำลังส่ง…",
+  "Waiting": "รอคิว",
+  "errors": "มี error",
   // Settings: SSL
   "SSL certificate verification": "ตรวจสอบใบรับรอง SSL",
   "Off: self-signed and internal certificates are accepted — only for test servers you trust": "ปิด: ยอมรับใบรับรองที่ออกเอง (self-signed) และของภายใน — ใช้กับ server ทดสอบที่ไว้ใจได้เท่านั้น",

@@ -988,3 +988,21 @@ test('tokenEndpoint auth: an env with none of the login variables sends without 
   vars.set('KC_TOKEN_URL', 'http://127.0.0.1:1/token');
   await assert.rejects(applyAuth(keycloakAuth(), { url: req.url, headers: {} }, { vars, env: { name: 'local' }, runtime: {} }), /unresolved/);
 });
+
+test('GraphQL: several operations split into one runnable document each', async () => {
+  const { splitOperations } = await import('../lib/runner.mjs');
+  const q = `mutation { a(x: 1) { ...F } }
+mutation Del($n: String!) { del(name: $n) { ok } }
+query { list { name } }
+fragment F on T { id ...G }
+fragment G on T { name }
+fragment Unused on T { z }`;
+  const ops = splitOperations(q, { n: 'x', other: 1 });
+  assert.deepEqual(ops.map((o) => [o.name, o.type]), [['a', 'mutation'], ['Del', 'mutation'], ['list', 'query']]);
+  assert.match(ops[0].query, /fragment F[\s\S]*fragment G/);
+  assert.doesNotMatch(ops[0].query, /Unused/);
+  assert.equal(ops[2].query, 'query { list { name } }');
+  assert.deepEqual(ops[1].variables, { n: 'x' });
+  assert.deepEqual(ops[0].variables, {});
+  assert.deepEqual(splitOperations('query {'), []);
+});

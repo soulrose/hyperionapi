@@ -43,6 +43,7 @@
       <span class="method" id="method">POST</span>
       <span class="url-box"><input class="lane-url" id="execUrl" spellcheck="false" autocomplete="off" aria-label="URL" placeholder="Pick a request on the left" data-i18n-placeholder disabled><small class="url-src" id="urlSrc"></small></span>
       <button class="ghost small" id="hostVar" hidden title="Turn this host into an env variable in every request that uses it" data-i18n-title data-i18n>Use host per env</button>
+      <button class="ghost" id="sendAll" hidden></button>
       <button class="send" id="send" disabled>Send <kbd>Ctrl+Enter</kbd></button>
       <button class="ghost" id="rtClose" hidden title="Close this connection" data-i18n-title>Disconnect</button>
     </div>
@@ -199,6 +200,7 @@
         <span class="meta" id="resMeta"></span>
         <label class="phi" data-i18n><input type="checkbox" id="unmask"> Show patient data</label>
       </div>
+      <div class="op-runs" id="opRuns" hidden></div>
       <div class="tabs" role="tablist">
         <button role="tab" data-tab="body" aria-selected="true">Body</button>
         <button role="tab" data-tab="tests">Tests <span id="testCount"></span></button>

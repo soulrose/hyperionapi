@@ -1253,10 +1253,15 @@ async function validate() {
   } catch (e) {
     notes.push(t('Variables is not valid JSON: {error}', { error: e.message }));
   }
+  let operations = 0;
   if (isGql()) {
-    const { errors } = await api('/api/validate', { file: state.req.file, env: state.env.name, query: $('query').value });
-    notes.push(...errors);
+    const v = await api('/api/validate', { file: state.req.file, env: state.env.name, query: $('query').value });
+    notes.push(...v.errors);
+    operations = v.operations;
   }
+  $('sendAll').hidden = operations < 2;
+  $('sendAll').textContent = t('Send all {n}', { n: operations });
+  $('sendAll').title = t('Send every operation in the box, one at a time — stops at the first error');
   lint.innerHTML = notes.map((n) => `<li>${esc(n)}</li>`).join('');
 }
 
@@ -1733,9 +1738,83 @@ async function send() {
   }
 }
 
+// GraphQL runs one operation per request: send each in turn, stop at the first that fails (earlier ones stay done)
+async function sendAll() {
+  if (!state.req || !isGql() || $('send').disabled) return;
+  let variables;
+  try {
+    variables = JSON.parse($('vars').value || '{}');
+  } catch {
+    return validate();
+  }
+  const { operations } = await api('/api/graphql/split', { query: $('query').value, variables });
+  const mutations = operations.filter((o) => o.type === 'mutation');
+  if (state.env.protected && mutations.length) {
+    const ok = await askForm({
+      title: t('Send {n} operations?', { n: operations.length }),
+      desc: t('To {env} — real data · these mutations change data: {list}', { env: state.env.title ?? state.env.name, list: mutations.map((o) => o.name).join(', ') }),
+      fields: [],
+      submit: t('OK'),
+      danger: true,
+      onSubmit: async () => true,
+    });
+    if (!ok) return;
+  }
+  const base = { file: state.req.file, env: state.env.name, auth: readAuth(), headers: readHeaders(), scripts: readScripts() };
+  state.opRuns = operations.map((op) => ({ op, result: null }));
+  state.opBusy = true;
+  $('send').disabled = $('sendAll').disabled = true;
+  $('send').classList.add('busy');
+  try {
+    for (const run of state.opRuns) {
+      paintOpRuns();
+      const confirm = state.env.protected && run.op.type === 'mutation' ? { confirm: true } : {};
+      run.result = await api('/api/run', { ...base, ...confirm, query: run.op.query, variables: run.op.variables }).catch((err) => ({ error: err.message, tests: [], warnings: [], logs: [] }));
+      state.result = run.result;
+      renderResult();
+      if (!resultOk(run.result)) break;
+    }
+  } finally {
+    state.opBusy = false;
+    $('send').disabled = $('sendAll').disabled = false;
+    $('send').classList.remove('busy');
+    paintOpRuns();
+    refreshToken();
+  }
+}
+
+// one row per operation of the last send-all; shown while its result is the one on screen
+function paintOpRuns() {
+  const box = $('opRuns');
+  const runs = state.opRuns;
+  box.hidden = !(runs && (state.opBusy || runs.some((x) => x.result === state.result)));
+  if (box.hidden) return;
+  const current = runs.findIndex((x) => !x.result);
+  box.innerHTML = runs
+    .map(({ op, result: r }, i) => {
+      const gqlErrors = r?.response?.json?.errors?.length;
+      const [cls, text] = !r
+        ? ['wait', !state.opBusy ? t('Not sent') : i === current ? t('Sending…') : t('Waiting')]
+        : resultOk(r)
+          ? ['ok', [r.status, r.timeMs != null && `${r.timeMs} ms`].filter(Boolean).join(' · ')]
+          : ['err', r.blocked ? t('Blocked') : gqlErrors ? `${r.status} · ${t('errors')}` : r.status ?? t('Failed')];
+      return `<button type="button" class="op-run" data-i="${i}"${r ? '' : ' disabled'}${r && r === state.result ? ' aria-current="true"' : ''}><span class="op ${esc(op.type)}">${esc(op.type)}</span><span class="op-run-name">${esc(op.name)}</span><span class="op-run-state ${cls}">${esc(text)}</span></button>`;
+    })
+    .join('');
+}
+$('opRuns').addEventListener('click', (e) => {
+  const run = state.opRuns?.[e.target.closest('.op-run')?.dataset.i];
+  if (!run?.result) return;
+  state.result = run.result;
+  renderResult();
+});
+
+const resultOk = (r) => r.status != null && r.status < 400 && !r.error && !r.soapFault && !r.response?.json?.errors?.length;
+
 function renderResult() {
   const r = state.result;
-  const ok = r.status != null && r.status < 400 && !r.error && !r.soapFault && !r.response?.json?.errors?.length;
+  const ok = resultOk(r);
+  paintOpRuns();
   $('status').className = `status ${r.status == null ? 'err' : ok ? 'ok' : 'err'}`;
   $('status').textContent = r.blocked ? t('Blocked') : r.status ?? t('Failed');
   $('resMeta').textContent = [r.timeMs != null && `${r.timeMs} ms`, kb(r.size)].filter(Boolean).join(' · ');
@@ -1768,7 +1847,9 @@ function renderResult() {
     ? `<ul class="tests">${tests.map((t) => `<li class="${t.pass ? 'pass' : 'fail'}">${esc(t.name)}${t.error ? `<small>${esc(tr(t.error))}</small>` : ''}</li>`).join('')}</ul>`
     : `<div class="empty">${t('This request has no tests yet')}<br><button type="button" class="ghost small" data-write-test>${t('Write a test')}</button></div>`;
 
-  state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
+  // once per response: showing it again (a send-all row, Show patient data) must not repeat its lines
+  if (!r.logged) state.logs.push(...(r.logs ?? []).map((l) => `${new Date().toLocaleTimeString()}  ${tr(l)}`));
+  r.logged = true;
   renderLog();
   $('tab-headers').innerHTML = resp?.headers
     ? `<table class="kv">${Object.entries(resp.headers).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>`
@@ -1941,6 +2022,7 @@ $('unmask').onchange = () => state.result && renderResult();
 
 // ---------- buttons ----------
 $('send').onclick = send;
+$('sendAll').onclick = sendAll;
 // request autosave: query, variables, Authorization and Headers are written ~0.8 s after the last edit
 let saveTimer;
 function scheduleSave() {

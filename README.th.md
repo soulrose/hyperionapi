@@ -58,6 +58,8 @@ schema โหลดเอง (ตอนเปิด request / เปลี่ย
 
 ## แท็บของ request (แบบ Postman)
 
+**หลาย operation ในช่องเดียว:** GraphQL รันได้ 1 operation ต่อ 1 request ปุ่ม **Send** จึงตอบ error ถ้าในช่องมีตั้งแต่ 2 อัน จะมีปุ่ม **ส่งทั้ง N operation** ขึ้นข้าง ๆ ซึ่งส่งทีละอันตามลำดับ พร้อม fragment และตัวแปรที่อันนั้นใช้ และแสดงผลแยกเป็นแถว · หยุดเมื่อเจอ error อันแรก อันก่อนหน้าไม่ถูกย้อนกลับ · prod จะถามก่อนและแสดงรายชื่อ mutation
+
 - **Query** — ซ้ายเป็นรายการ field จาก schema (โหลดเอง): เปิด field แบบ object แล้วแถวแรก **ทุก field (n)** ติ๊ก/เอาติ๊กออกทุก field ธรรมดาข้างใน (object ข้างในมีแถวของตัวเอง); เปิด field ที่มี argument จะมีช่องกรอกค่า — พิมพ์แล้วค่าไปอยู่ใน Variables และ argument ถูกใส่ใน query เป็น $ตัวแปรเอง (argument ที่ไม่บังคับมี checkbox); ติ๊ก field แล้ว query ถูกเขียนให้, เอาติ๊กออก field ก็หายจาก query; argument ที่บังคับกลายเป็น `$ตัวแปร` และโผล่ใน Variables ให้เติมค่า; พิมพ์ query เองแล้วติ๊กก็ตามให้ · ปุ่ม **«** ย่อแผงเหลือแถบ "Schema" (กดเพื่อขยาย) · ลากขอบขวาเพื่อปรับความกว้าง (ดับเบิลคลิกคืนค่าเดิม)
 - **Authorization** — ใช้ของ collection (ค่าเริ่มต้น), ไม่มี, Bearer Token, Basic, API Key — token ใส่เป็น `{{bearer_token}}` เพื่อใช้ค่าจาก env ได้
 - **Headers** — header ของ request นี้ (ชื่อซ้ำกับของ collection จะทับ) และแสดง header ที่ได้จาก collection ให้ดู

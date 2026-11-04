@@ -696,3 +696,14 @@ body.soap-mode #lint, body.soap-mode .q-main > .sub-head, body.soap-mode .vars-w
 @media (prefers-reduced-motion: reduce) { .switch-row input[type=checkbox], .switch-row input[type=checkbox]::after { transition: none; } }
 /* top bar: verification is off */
 .ssl-off { font-size: 11.5px; font-weight: 600; color: var(--schema); background: var(--schema-soft); padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+
+/* send-all: one row per operation in the response pane */
+.op-runs { display: flex; flex-direction: column; flex: none; max-height: 132px; overflow-y: auto; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.op-run { display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 8px; font-size: 12.5px; text-align: left; color: inherit; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.op-run:hover:not(:disabled), .op-run[aria-current] { background: var(--fill); }
+.op-run:disabled { cursor: default; }
+.op-run-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--mono); }
+.op-run-state { flex: none; font: 600 12px var(--mono); }
+.op-run-state.ok { color: var(--pass); }
+.op-run-state.err { color: var(--exec); }
+.op-run-state.wait { opacity: .6; }
