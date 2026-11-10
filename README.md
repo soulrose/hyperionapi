@@ -208,4 +208,4 @@ npm test
 
 ## About
 
-Version 1.3.0 (V.01.03.00) · developer: soulrose
+Version 1.4.0 (V.01.04.00) · developer: soulrose
