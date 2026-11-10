@@ -34,6 +34,8 @@ npm run shortcut        # Windows: puts a "Hyperion API" icon on the Desktop
 
 **SSL certificate verification:** Settings → on by default. Turn it off to accept self-signed / internal-CA certificates for every kind of request (HTTP, logins, WebSocket / Socket.IO, gRPC); the top bar shows "SSL check off" while it is off. Kept in `~/.hyperion/settings.json`; `HYPERION_SSL_VERIFY=false` does the same for the CLI / CI.
 
+**Request timeout:** Settings → 15 s by default (up to 10 min) for slow APIs. Applies to requests, logins, schema and WSDL loads that set no `timeoutMs` of their own; `execution.timeoutMs` in a request or `_collection.yaml` still wins. Kept in `~/.hyperion/settings.json`; `HYPERION_TIMEOUT_MS` does the same for the CLI / CI.
+
 ## Projects
 
 - Click the project name next to the logo → pick a recent project, **Open folder…** (paste the path of a folder with `hyperion.yaml`) or **New project…**
@@ -67,7 +69,7 @@ When a request opens (no network): if this env was never synced, it borrows the 
 **Several operations in one box:** GraphQL runs one operation per request, so **Send** answers with an error for a box with two or more. A **Send all N** button appears next to it: each operation goes out on its own, in order, with the fragments and variables it uses, and each gets a result row. It stops at the first error; earlier operations are not rolled back. Prod asks first and lists the mutations.
 
 - **Query** — on the left, the schema's fields (loaded by itself). Open an object field: the first row **All fields (n)** ticks / unticks every plain field inside it. A field with arguments shows inputs; what you type goes to Variables and the argument is added to the query as a `$variable` (optional arguments have a checkbox). Ticking a field writes the query; unticking removes it; typing the query by hand updates the ticks. **«** folds the panel down to a "Schema" strip; drag its right edge to resize (double-click resets).
-- **Authorization** — Inherit from collection (default), None, Bearer Token, Basic, API Key. A token can be an env variable such as `{{bearer_token}}`.
+- **Authorization** — Inherit from collection (default), None, Bearer Token, Basic, API Key. The choice belongs to the env on screen (`execution.authByEnv.<env>` in the file); other envs keep their own. A token can be an env variable such as `{{bearer_token}}`.
 - **Headers** — this request's headers (same name as a collection header overrides it), plus the collection's headers for reference.
 - **Scripts** — written in the app: **Pre-request** (before sending, e.g. `$req.headers.set(...)`) and **Post-response (tests)** (`$test`, `$expect`, `$res.status`, `$res.json`, `$res.timeMs`; keep a value with `$env.set`). Snippet buttons: Status is 200, No GraphQL errors, Field exists, Faster than 1 s, Save a value to a variable. An empty Tests tab has a **Write a test** button.
 - Send uses what is in the tabs right away, even before it is saved.

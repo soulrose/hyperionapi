@@ -9,6 +9,7 @@ export const lang = read() === 'th' ? 'th' : 'en';
 // English text (the key) → Thai
 const TH = {
   "This computer sets NODE_TLS_REJECT_UNAUTHORIZED=0, which turns checks off for every Node program — Hyperion follows this switch instead": "เครื่องนี้ตั้ง NODE_TLS_REJECT_UNAUTHORIZED=0 ไว้ ซึ่งปิดการตรวจใบรับรองของทุกโปรแกรม Node — Hyperion ใช้สวิตช์นี้แทน",
+  "Saved for env {env} only — other envs keep their own": "จำแยกของ env {env} เท่านั้น — env อื่นยังใช้ค่าของตัวเอง",
   // send every operation in the box
   "Send all {n}": "ส่งทั้ง {n} operation",
   "Send every operation in the box, one at a time — stops at the first error": "ส่งทุก operation ในช่องทีละอัน — หยุดเมื่อเจอ error อันแรก",
@@ -20,6 +21,9 @@ const TH = {
   "errors": "มี error",
   // Settings: SSL
   "SSL certificate verification": "ตรวจสอบใบรับรอง SSL",
+  "Request timeout": "Timeout ของ request",
+  "How long to wait for a response before giving up — for requests and collections that do not set their own (timeoutMs)": "รอคำตอบนานเท่าไรก่อนยกเลิก — ใช้กับ request และ collection ที่ไม่ได้ตั้ง timeoutMs เอง",
+  "{n} seconds": "{n} วินาที",
   "Off: self-signed and internal certificates are accepted — only for test servers you trust": "ปิด: ยอมรับใบรับรองที่ออกเอง (self-signed) และของภายใน — ใช้กับ server ทดสอบที่ไว้ใจได้เท่านั้น",
   "SSL check off": "ปิดตรวจ SSL",
   "SSL certificate verification is off (Settings) — self-signed certificates are accepted": "ปิดการตรวจสอบใบรับรอง SSL อยู่ (Settings) — ยอมรับใบรับรองที่ออกเอง",

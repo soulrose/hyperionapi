@@ -474,6 +474,14 @@ async function showSettings() {
         hint: [t('Off: self-signed and internal certificates are accepted — only for test servers you trust'), server.globalTlsOff && t('This computer sets NODE_TLS_REJECT_UNAUTHORIZED=0, which turns checks off for every Node program — Hyperion follows this switch instead')].filter(Boolean).join(' · '),
         value: server.sslVerify,
       },
+      {
+        name: 'timeoutSec',
+        label: t('Request timeout'),
+        type: 'select',
+        hint: t('How long to wait for a response before giving up — for requests and collections that do not set their own (timeoutMs)'),
+        value: String(server.timeoutMs / 1000),
+        options: [...new Set(['15', '30', '60', '120', '300', '600', String(server.timeoutMs / 1000)])].sort((a, b) => a - b).map((v) => ({ value: v, label: t('{n} seconds', { n: v }) })),
+      },
       { name: 'uiFont', label: t('UI font'), type: 'select', value: p.uiFont, options: fontOptions(UI_FONTS) },
       { name: 'uiSize', label: t('Text size'), type: 'seg', showLabel: true, value: p.uiSize, options: ['90', '100', '110', '125'].map((v) => ({ value: v, label: `${v}%` })) },
       { name: 'codeFont', label: t('Code font'), type: 'select', value: p.codeFont, options: fontOptions(CODE_FONTS) },
@@ -501,6 +509,11 @@ async function showSettings() {
       if (form.elements.sslVerify.checked !== server.sslVerify) {
         server.sslVerify = form.elements.sslVerify.checked;
         api('/api/settings', { sslVerify: server.sslVerify }).then((r) => paintSsl(r.sslVerify));
+      }
+      const ms = Number(form.elements.timeoutSec.value) * 1000;
+      if (ms !== server.timeoutMs) {
+        server.timeoutMs = ms;
+        api('/api/settings', { timeoutMs: ms });
       }
       // env ticks: at least one stays shown
       if (envList.length) {
@@ -909,7 +922,7 @@ function askForm({ title, desc = '', fields, submit, onSubmit, onInput, autosave
   $('formError').hidden = true;
   const fieldHtml = (f) => {
       if (f.type === 'select') {
-        return `<label>${esc(f.label)}<select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}"${o.value === f.value ? ' selected' : ''}${o.font ? ` style="font-family: &quot;${esc(o.font)}&quot;"` : ''}>${esc(o.label)}</option>`).join('')}</select></label>`;
+        return `<label>${esc(f.label)}<select name="${f.name}">${f.options.map((o) => `<option value="${esc(o.value)}"${o.value === f.value ? ' selected' : ''}${o.font ? ` style="font-family: &quot;${esc(o.font)}&quot;"` : ''}>${esc(o.label)}</option>`).join('')}</select>${f.hint ? `<small class="hint">${esc(f.hint)}</small>` : ''}</label>`;
       }
       if (f.type === 'seg') {
         return `${f.showLabel ? `<div class="kv-label">${esc(f.label)}</div>` : ''}<div class="seg" role="radiogroup" aria-label="${esc(f.label)}">${f.options.map((o) => `<label><input type="radio" name="${f.name}" value="${esc(o.value)}"${o.value === f.value ? ' checked' : ''}>${esc(o.label)}</label>`).join('')}</div>`;
@@ -1195,6 +1208,7 @@ async function openRequest(file) {
   fillAuth(r.auth, r.inheritedAuth);
   fillHeaders(r.headers, r.inheritedHeaders);
   r.authKey = JSON.stringify([readAuth(), readHeaders()]); // to notice a token change later
+  r.env = state.env.name; // the env the form was filled for: a late autosave must not write it into another env
   await Promise.all([refreshSchema(), refreshToken()]);
   resetExplorer();
   validateSoon();
@@ -1943,6 +1957,7 @@ function fillAuth(auth, inherited) {
   $('apiKeyName').value = a.apiKey?.name ?? '';
   $('apiKeyValue').value = a.apiKey?.value ?? '';
   $('apiKeyIn').value = a.apiKey?.in ?? 'header';
+  $('authEnv').textContent = t('Saved for env {env} only — other envs keep their own', { env: state.env.title ?? state.env.name });
   $('authInherit').textContent = t('Uses the collection auth: {label} — change it with the collection Settings button', { label: AUTH_LABEL[inherited] ?? inherited });
   showAuthFields();
   showBearerHint();
@@ -2042,7 +2057,7 @@ async function saveNow() {
     return validate();
   }
   try {
-    await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() || isSoap() ? undefined : variables, rt: isRt() ? readRt() : undefined, soap: isSoap() ? readSoap() : undefined, auth: readAuth(), headers: readHeaders(), scripts: readScripts() });
+    await api('/api/save', { file: state.req.file, query: isGql() ? $('query').value : undefined, variables: isRt() || isSoap() ? undefined : variables, rt: isRt() ? readRt() : undefined, soap: isSoap() ? readSoap() : undefined, env: state.req.env, auth: readAuth(), headers: readHeaders(), scripts: readScripts() });
     $('save').textContent = t('Saved {time}', { time: new Date().toLocaleTimeString() });
     // token or headers changed while the schema is not this env's own: try this env's schema again
     const authKey = JSON.stringify([readAuth(), readHeaders()]);

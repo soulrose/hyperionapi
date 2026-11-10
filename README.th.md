@@ -29,6 +29,8 @@
 
 **ตรวจ SSL certificate:** Settings → เปิดไว้เป็นค่าเริ่มต้น · ปิดเพื่อยอมรับ certificate แบบ self-signed / CA ภายใน ทุกชนิด request (HTTP, login, WebSocket / Socket.IO, gRPC) แถบบนจะขึ้น "SSL check off" ตอนปิด · เก็บใน `~/.hyperion/settings.json` · ใช้ `HYPERION_SSL_VERIFY=false` กับ CLI / CI ได้
 
+**Timeout ของ request:** Settings → ค่าเริ่มต้น 15 วินาที (ตั้งได้ถึง 10 นาที) สำหรับ API ที่ช้า · ใช้กับ request, login, การโหลด schema และ WSDL ที่ไม่ได้ตั้ง `timeoutMs` เอง · ถ้า request หรือ `_collection.yaml` ตั้ง `execution.timeoutMs` ไว้ ค่านั้นชนะ · เก็บใน `~/.hyperion/settings.json` · ใช้ `HYPERION_TIMEOUT_MS` กับ CLI / CI ได้
+
 ## หลายโปรเจกต์
 
 - กดชื่อโปรเจกต์ข้างโลโก้ → เลือกโปรเจกต์ที่เคยเปิด, **เปิดโฟลเดอร์…** (วาง path ของโฟลเดอร์ที่มี `hyperion.yaml`) หรือ **สร้างโปรเจกต์ใหม่…**
@@ -61,7 +63,7 @@ schema โหลดเอง (ตอนเปิด request / เปลี่ย
 **หลาย operation ในช่องเดียว:** GraphQL รันได้ 1 operation ต่อ 1 request ปุ่ม **Send** จึงตอบ error ถ้าในช่องมีตั้งแต่ 2 อัน จะมีปุ่ม **ส่งทั้ง N operation** ขึ้นข้าง ๆ ซึ่งส่งทีละอันตามลำดับ พร้อม fragment และตัวแปรที่อันนั้นใช้ และแสดงผลแยกเป็นแถว · หยุดเมื่อเจอ error อันแรก อันก่อนหน้าไม่ถูกย้อนกลับ · prod จะถามก่อนและแสดงรายชื่อ mutation
 
 - **Query** — ซ้ายเป็นรายการ field จาก schema (โหลดเอง): เปิด field แบบ object แล้วแถวแรก **ทุก field (n)** ติ๊ก/เอาติ๊กออกทุก field ธรรมดาข้างใน (object ข้างในมีแถวของตัวเอง); เปิด field ที่มี argument จะมีช่องกรอกค่า — พิมพ์แล้วค่าไปอยู่ใน Variables และ argument ถูกใส่ใน query เป็น $ตัวแปรเอง (argument ที่ไม่บังคับมี checkbox); ติ๊ก field แล้ว query ถูกเขียนให้, เอาติ๊กออก field ก็หายจาก query; argument ที่บังคับกลายเป็น `$ตัวแปร` และโผล่ใน Variables ให้เติมค่า; พิมพ์ query เองแล้วติ๊กก็ตามให้ · ปุ่ม **«** ย่อแผงเหลือแถบ "Schema" (กดเพื่อขยาย) · ลากขอบขวาเพื่อปรับความกว้าง (ดับเบิลคลิกคืนค่าเดิม)
-- **Authorization** — ใช้ของ collection (ค่าเริ่มต้น), ไม่มี, Bearer Token, Basic, API Key — token ใส่เป็น `{{bearer_token}}` เพื่อใช้ค่าจาก env ได้
+- **Authorization** — จำแยกตาม env ที่เลือกอยู่ (`execution.authByEnv.<env>` ในไฟล์) env อื่นยังใช้ค่าของตัวเอง · ใช้ของ collection (ค่าเริ่มต้น), ไม่มี, Bearer Token, Basic, API Key — token ใส่เป็น `{{bearer_token}}` เพื่อใช้ค่าจาก env ได้
 - **Headers** — header ของ request นี้ (ชื่อซ้ำกับของ collection จะทับ) และแสดง header ที่ได้จาก collection ให้ดู
 - **Scripts** — เขียนได้ในแอป: **Pre-request** (ก่อนยิง เช่น `$req.headers.set(...)`) และ **Post-response (tests)** (`$test`, `$expect`, `$res.status`, `$res.json`, `$res.timeMs`, เก็บค่าด้วย `$env.set`) · ปุ่มตัวอย่าง: Status 200, ไม่มี error ของ GraphQL, มีข้อมูลกลับมา, เร็วกว่า 1 วินาที, เก็บค่าไว้ในตัวแปร · Send ใช้ script ตามที่แก้อยู่ และบันทึกลง `.req.yaml` เอง · แท็บ Tests ที่ยังว่างมีปุ่ม **Write a test**
 - Send ใช้ค่าในแท็บทันทีแม้ยังไม่บันทึก · **บันทึกลงไฟล์** เขียน query, variables, auth และ headers ลง `.req.yaml`

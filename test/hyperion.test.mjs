@@ -1006,3 +1006,64 @@ fragment Unused on T { z }`;
   assert.deepEqual(ops[0].variables, {});
   assert.deepEqual(splitOperations('query {'), []);
 });
+
+test('request auth belongs to the env on screen: None on dev leaves test and prod as they are', async () => {
+  const { serve } = await import('../lib/server.mjs');
+  const { requestAuth } = await import('../lib/auth.mjs');
+  const mocks2 = await startMocks({ tokenTtlSec: 300 });
+  const root = await mkdtemp(path.join(tmpdir(), 'hyperion-auth-env-'));
+  await writeSample(root, mocks2);
+  const server = await serve({ dir: root, port: 0, registry: false });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const post = (p, body) => fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+  const file = 'collections/sample/patient/get-patient.req.yaml';
+  const authOf = (env) => fetch(`${base}/api/request?file=${encodeURIComponent(file)}&env=${env}`).then((r) => r.json()).then((r) => r.auth);
+  const saved = async () => YAML.parse(await readFile(path.join(root, file), 'utf8'));
+  try {
+    await post('/api/save', { file, env: 'dev', auth: 'none' });
+    assert.equal(await authOf('dev'), 'none');
+    assert.equal(await authOf('prod'), 'inherit');
+    // each env keeps its own, and saving what it already has writes nothing
+    const bearer = { type: 'bearer', bearer: { token: '{{T}}' } };
+    await post('/api/save', { file, env: 'test', auth: bearer });
+    await post('/api/save', { file, env: 'prod', auth: 'inherit' });
+    assert.deepEqual((await saved()).execution.authByEnv, { dev: 'none', test: bearer });
+    assert.equal(await authOf('dev'), 'none');
+    // back to Inherit removes the env's entry
+    await post('/api/save', { file, env: 'dev', auth: 'inherit' });
+    await post('/api/save', { file, env: 'test', auth: 'inherit' });
+    assert.equal((await saved()).execution?.authByEnv, undefined);
+    // an older file with one shared None: Inherit on prod stays on prod
+    const doc = await saved();
+    doc.execution = { ...doc.execution, auth: 'none' };
+    await writeFile(path.join(root, file), YAML.stringify(doc));
+    await post('/api/save', { file, env: 'prod', auth: 'inherit' });
+    assert.equal(await authOf('prod'), 'inherit');
+    assert.equal(await authOf('test'), 'none');
+    assert.equal(requestAuth(await saved(), 'dev'), 'none');
+  } finally {
+    server.close();
+    await mocks2.close?.();
+  }
+});
+
+test('request timeout: the Settings default applies when a request sets none; its own timeoutMs wins', async () => {
+  const http = await import('node:http');
+  const { send } = await import('../lib/http.mjs');
+  const server = http.createServer((req, res) => setTimeout(() => res.end('{"ok":true}'), 600));
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const saved = process.env.HYPERION_TIMEOUT_MS;
+  try {
+    process.env.HYPERION_TIMEOUT_MS = '200';
+    await assert.rejects(send({ url }), /timeout after 0\.2 s/);
+    assert.equal((await send({ url, timeoutMs: 3000 })).json.ok, true);
+    process.env.HYPERION_TIMEOUT_MS = '3000';
+    assert.equal((await send({ url })).json.ok, true);
+  } finally {
+    if (saved === undefined) delete process.env.HYPERION_TIMEOUT_MS;
+    else process.env.HYPERION_TIMEOUT_MS = saved;
+    server.closeAllConnections?.();
+    server.close();
+  }
+});
