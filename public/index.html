@@ -27,6 +27,7 @@
     </div>
     <div class="envs" id="envs" role="radiogroup" aria-label="Environment"></div>
     <span class="ssl-off" id="sslOff" hidden title="SSL certificate verification is off (Settings) — self-signed certificates are accepted" data-i18n-title data-i18n>SSL check off</span>
+    <button class="update-btn" id="updateBtn" type="button" hidden title="Install the new version (the app restarts)" data-i18n-title></button>
     <button class="ghost small" id="envEdit" title="Edit this env's URLs and variables" data-i18n-title data-i18n>Edit env</button>
     <div class="token" id="token" hidden>
       <span class="token-dot"></span><span id="tokenText"></span>
@@ -226,6 +227,7 @@
     <dl class="about-meta">
       <dt data-i18n>Developer</dt><dd id="aboutDev"></dd>
       <dt>Runtime</dt><dd id="aboutNode"></dd>
+      <dt data-i18n>Updates</dt><dd><span id="aboutUpdate"></span> <button type="button" class="ghost small" id="aboutCheck" data-i18n>Check for updates</button></dd>
     </dl>
     <menu><button type="button" class="primary" id="aboutClose" data-i18n>Close</button></menu>
   </dialog>

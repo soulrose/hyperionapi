@@ -1067,3 +1067,45 @@ test('request timeout: the Settings default applies when a request sets none; it
     server.close();
   }
 });
+
+test('updates: newest vX.Y.Z tag on origin; edited files block; update fast-forwards to the tag', async (t) => {
+  const { execFileSync } = await import('node:child_process');
+  const { checkForUpdate, applyUpdate, newer } = await import('../lib/update.mjs');
+  try {
+    execFileSync('git', ['--version']);
+  } catch {
+    return t.skip('no git');
+  }
+  assert.ok(newer('1.10.0', '1.9.3') && !newer('1.4.0', '1.4.0') && !newer('v1.3.9', '1.4.0'));
+  const base = await mkdtemp(path.join(tmpdir(), 'hyperion-upd-'));
+  const git = (cwd, ...a) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { cwd, stdio: 'pipe' }).toString();
+  const origin = path.join(base, 'origin.git');
+  const work = path.join(base, 'work');
+  const install = path.join(base, 'install');
+  git(base, 'init', '-q', '--bare', '-b', 'main', origin);
+  git(base, 'init', '-q', '-b', 'main', work);
+  const release = async (v) => {
+    await writeFile(path.join(work, 'package.json'), JSON.stringify({ name: 'h', version: v }));
+    git(work, 'add', '-A');
+    git(work, 'commit', '-qm', v);
+    git(work, 'tag', `v${v}`);
+    git(work, 'push', '-q', origin, 'main', `v${v}`);
+  };
+  await release('1.0.0');
+  git(base, 'clone', '-q', origin, install);
+  assert.equal((await checkForUpdate({ force: true, root: install })).available, false);
+  await release('1.1.0');
+  const u = await checkForUpdate({ force: true, root: install });
+  assert.equal(u.available, true);
+  assert.equal(u.latest, '1.1.0');
+  assert.equal(u.blocked, undefined);
+  // an edited tracked file: no update in place
+  await writeFile(path.join(install, 'package.json'), '{"name":"h","version":"1.0.0","x":1}');
+  assert.match((await checkForUpdate({ force: true, root: install })).blocked, /edited/);
+  await assert.rejects(applyUpdate({ root: install }), /edited/);
+  git(install, 'checkout', '--', 'package.json');
+  const r = await applyUpdate({ root: install });
+  assert.deepEqual(r, { from: '1.0.0', to: '1.1.0', installed: false });
+  assert.equal((await checkForUpdate({ force: true, root: install })).available, false);
+  await rm(base, { recursive: true, force: true }).catch(() => {});
+});

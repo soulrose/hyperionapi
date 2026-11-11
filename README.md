@@ -36,6 +36,8 @@ npm run shortcut        # Windows: puts a "Hyperion API" icon on the Desktop
 
 **Request timeout:** Settings → 15 s by default (up to 10 min) for slow APIs. Applies to requests, logins, schema and WSDL loads that set no `timeoutMs` of their own; `execution.timeoutMs` in a request or `_collection.yaml` still wins. Kept in `~/.hyperion/settings.json`; `HYPERION_TIMEOUT_MS` does the same for the CLI / CI.
 
+**Updates:** Hyperion checks the newest `vX.Y.Z` tag on GitHub (through `git`, so your Git proxy / login apply) when it starts and every 6 hours. A new version shows an **Update to V.xx.xx.xx** button in the top bar: one click fast-forwards this folder to the tag, runs `npm install` if `package-lock.json` changed, restarts the server and reloads the window. Settings → **Update automatically** (on by default) installs it while starting, before the window opens. About → **Check for updates** checks now. Needs a `git clone` of the repo with no edited files; otherwise the button explains why and links to the tags page.
+
 ## Projects
 
 - Click the project name next to the logo → pick a recent project, **Open folder…** (paste the path of a folder with `hyperion.yaml`) or **New project…**
@@ -208,4 +210,4 @@ npm test
 
 ## About
 
-Version 1.4.0 (V.01.04.00) · developer: soulrose
+Version 1.5.0 (V.01.05.00) · developer: soulrose

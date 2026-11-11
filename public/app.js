@@ -405,9 +405,70 @@ async function showAbout() {
   $('aboutVersion').textContent = `V.${a.version.split('.').map((n) => n.padStart(2, '0')).join('.')}`;
   $('aboutDev').textContent = a.dev;
   $('aboutNode').textContent = `Node ${a.node.replace(/^v/, '')}`;
+  paintAboutUpdate(lastUpdate);
   $('aboutDlg').showModal();
   $('aboutClose').focus();
 }
+// ---------- updates: the newest release tag on GitHub; one click (or Settings → Update automatically) installs it ----------
+let lastUpdate = null;
+const vLabel = (v) => `V.${String(v).split('.').map((n) => n.padStart(2, '0')).join('.')}`;
+function paintAboutUpdate(u) {
+  const el = $('aboutUpdate');
+  if (!u) el.textContent = '';
+  else if (u.error) el.textContent = t('Could not check (offline?)');
+  else if (u.available) el.textContent = u.blocked ? t('{v} is out — {why}', { v: vLabel(u.latest), why: t(u.blocked) }) : t('{v} is out', { v: vLabel(u.latest) });
+  else el.textContent = t('Up to date');
+}
+function paintUpdate(u) {
+  lastUpdate = u;
+  const b = $('updateBtn');
+  b.hidden = !(u?.available || u?.updating);
+  b.disabled = !!u?.updating;
+  b.textContent = u?.updating ? t('Updating to {v}…', { v: vLabel(u.updating) }) : u?.available ? t('Update to {v}', { v: vLabel(u.latest) }) : '';
+  if ($('aboutDlg').open) paintAboutUpdate(u);
+  if (u?.updating) waitForVersion(u.updating);
+}
+async function checkUpdate(force) {
+  const u = await api(`/api/update${force ? '?force=1' : ''}`).catch(() => null);
+  if (u) paintUpdate(u);
+  return u;
+}
+// the server restarts on the new version: reload the page once it answers with it
+let waiting = false;
+async function waitForVersion(v) {
+  if (waiting) return;
+  waiting = true;
+  for (let i = 0; i < 180; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    const a = await fetch('/api/about').then((r) => r.json()).catch(() => null);
+    if (a?.version === v) return location.reload();
+  }
+  waiting = false;
+  paintUpdate({ ...lastUpdate, updating: null });
+  alert(t('The update did not come back — see server.err.log in the Hyperion folder'));
+}
+async function installUpdate() {
+  const u = lastUpdate;
+  if (!u?.available) return;
+  if (u.blocked) return alert(t("{v} is out, but this copy can't update itself: {why}", { v: vLabel(u.latest), why: t(u.blocked) }) + `
+${u.releases}`);
+  const r = await askForm({
+    title: t('Update to {v}', { v: vLabel(u.latest) }),
+    desc: t('Hyperion restarts and this window reloads (about 10 seconds). Your requests are already saved.'),
+    fields: [],
+    submit: t('Update now'),
+    onSubmit: () => api('/api/update', {}),
+  });
+  if (r) paintUpdate({ ...u, updating: r.to });
+}
+$('updateBtn').onclick = installUpdate;
+$('aboutCheck').onclick = async () => {
+  $('aboutUpdate').textContent = t('Checking…');
+  paintAboutUpdate(await checkUpdate(true));
+};
+checkUpdate(false);
+setInterval(() => checkUpdate(false), 6 * 3600 * 1000);
+
 // Settings: UI language (the page reloads in the chosen language)
 // ---------- fonts: UI font, code font and sizes, kept on this computer and applied at once ----------
 const FONT_KEY = 'hyperion.fonts';
@@ -475,6 +536,14 @@ async function showSettings() {
         value: server.sslVerify,
       },
       {
+        name: 'autoUpdate',
+        type: 'check',
+        switch: true,
+        label: t('Update automatically'),
+        hint: t('A new version found when Hyperion starts is installed right away; off = only the Update button in the top bar'),
+        value: server.autoUpdate,
+      },
+      {
         name: 'timeoutSec',
         label: t('Request timeout'),
         type: 'select',
@@ -509,6 +578,10 @@ async function showSettings() {
       if (form.elements.sslVerify.checked !== server.sslVerify) {
         server.sslVerify = form.elements.sslVerify.checked;
         api('/api/settings', { sslVerify: server.sslVerify }).then((r) => paintSsl(r.sslVerify));
+      }
+      if (form.elements.autoUpdate.checked !== server.autoUpdate) {
+        server.autoUpdate = form.elements.autoUpdate.checked;
+        api('/api/settings', { autoUpdate: server.autoUpdate });
       }
       const ms = Number(form.elements.timeoutSec.value) * 1000;
       if (ms !== server.timeoutMs) {

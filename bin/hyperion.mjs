@@ -36,6 +36,7 @@ const HELP = `hyperion — schema from Dev, execute on Prod
   hyperion move <file.req.yaml> <collectionDir> [--folder f]     move a request to another collection
   hyperion split <folderDir> ["<new collection name>"]          turn a folder into its own collection
   hyperion serve [dir] [--port 4321] [--open]           web UI (no dir = last project; switch projects in the UI)
+                                                        --attach: no new window, stop when the open one closes (restart after an update)
   hyperion demo [--open]                                UI against a built-in mock API
   hyperion shortcut                                     Windows: "Hyperion API" icon on the Desktop (opens its own window)
 `;
@@ -59,6 +60,7 @@ const { values: o, positionals } = parseArgs({
     header: { type: 'string', short: 'H', multiple: true },
     port: { type: 'string' },
     open: { type: 'boolean' },
+    attach: { type: 'boolean' },
     project: { type: 'string' },
     'postman-desktop': { type: 'boolean' },
     from: { type: 'string' },
@@ -86,7 +88,7 @@ async function main() {
 
   if (cmd === 'serve') {
     const { serve } = await import('../lib/server.mjs');
-    return serve({ dir: args[0] ? path.resolve(args[0]) : undefined, port: Number(o.port ?? 4321), open: o.open });
+    return serve({ dir: args[0] ? path.resolve(args[0]) : undefined, port: Number(o.port ?? 4321), open: o.open, attach: o.attach });
   }
 
   if (cmd === 'shortcut') {
