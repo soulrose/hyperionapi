@@ -2,6 +2,7 @@
 import { t, tr, applyDom, lang, setLang } from './i18n.js';
 import { THEMES, currentTheme, applyTheme } from './themes.js';
 import { findTables, xmlToObject, columnsOf, flatRow, filterRows, sortRows } from './table.js';
+import { initVarHints } from './varhint.js';
 
 applyDom();
 
@@ -2687,6 +2688,8 @@ loadTree().catch((err) => {
   $('tree').innerHTML = `<p class="banner err">${esc(err.message)}</p>`;
 });
 setInterval(() => state.req && refreshToken().catch(() => {}), 60000);
+
+initVarHints({ api, esc, t, context: () => ({ file: state.view === 'request' ? state.req?.file : null, env: state.env?.name }) });
 
 // ---------- app window lifecycle: the server stops once the last Hyperion window is closed ----------
 const PAGE_ID = Math.random().toString(36).slice(2);

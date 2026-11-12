@@ -1196,3 +1196,27 @@ test('response table: cell text for arrays, objects and empty values', () => {
   assert.equal(long.length, 120);
   assert.ok(long.endsWith('…'));
 });
+
+test('variables for {{…}} hints: names from env / collection / global, values resolved, secrets and tokens hidden', async () => {
+  const { serve } = await import('../lib/server.mjs');
+  const mocks2 = await startMocks({ tokenTtlSec: 300 });
+  const root = await mkdtemp(path.join(tmpdir(), 'hyperion-vars-'));
+  await writeSample(root, mocks2);
+  const envFile = path.join(root, 'envs/dev.env.yaml');
+  const env = YAML.parse(await readFile(envFile, 'utf8'));
+  Object.assign(env.variables, { BASE: 'https://dev-host', API: '{{BASE}}/api', API_KEY: 'k-1234567890abcdefgh', PIN: '42' });
+  await writeFile(envFile, YAML.stringify(env));
+  const server = await serve({ dir: root, port: 0, registry: false });
+  try {
+    const r = await fetch(`http://127.0.0.1:${server.address().port}/api/vars?env=dev&file=collections/sample/patient/get-patient.req.yaml`).then((x) => x.json());
+    const v = Object.fromEntries(r.vars.map((x) => [x.name, x]));
+    assert.equal(v.API.value, 'https://dev-host/api');
+    assert.equal(v.API.from, 'env');
+    assert.equal(v.API_KEY.value, 'k-1234•••• (20)');
+    assert.equal(v.PIN.value, '42');
+    assert.ok(!JSON.stringify(r).includes('abcdefgh'));
+  } finally {
+    server.close();
+    mocks2.close();
+  }
+});
