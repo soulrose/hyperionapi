@@ -12,6 +12,7 @@ import { runRequest } from '../lib/runner.mjs';
 import { syncSchema } from '../lib/schema.mjs';
 import { parseCsv } from '../lib/csv.mjs';
 import { maskDeep } from '../lib/util.mjs';
+import { findTables, xmlToObject, columnsOf, cellText, flatRow, filterRows, sortRows } from '../public/table.js';
 
 let mocks;
 process.env.HYPERION_SECRET_PROD_PASSWORD = 'pw';
@@ -1108,4 +1109,90 @@ test('updates: newest vX.Y.Z tag on origin; edited files block; update fast-forw
   assert.deepEqual(r, { from: '1.0.0', to: '1.1.0', installed: false });
   assert.equal((await checkForUpdate({ force: true, root: install })).available, false);
   await rm(base, { recursive: true, force: true }).catch(() => {});
+});
+
+test('response table: biggest list of a GraphQL response, nested objects as a.b columns', () => {
+  const json = {
+    data: {
+      ward: { name: 'A', beds: [{ no: 1 }] },
+      patients: [
+        { hn: '001', name: 'สมชาย', address: { city: 'Bangkok', geo: { lat: 1 } }, tags: ['x', 'y'] },
+        null,
+        { hn: '002', name: 'Somsri', visits: [{ at: 'today' }] },
+      ],
+    },
+  };
+  const tables = findTables(json);
+  assert.deepEqual(tables.map((x) => [x.path, x.rows.length]), [['data.patients', 2], ['data.ward', 1], ['data.ward.beds', 1]]);
+  const cols = columnsOf(tables[0].rows);
+  assert.deepEqual(cols, ['hn', 'name', 'address.city', 'address.geo.lat', 'tags', 'visits']);
+  assert.deepEqual(flatRow(tables[0].rows[1], cols), ['002', 'Somsri', '', '', '', '[1 items]']);
+  assert.equal(flatRow(tables[0].rows[0], cols)[4], 'x, y');
+});
+
+test('response table: a single object becomes one row; nothing tabular gives no table', () => {
+  assert.deepEqual(findTables({ data: { patient: { hn: '001', name: 'A' } } }), [{ path: 'data.patient', rows: [{ hn: '001', name: 'A' }] }]);
+  assert.deepEqual(findTables({ id: 7 })[0].path, '(root)');
+  // a patient with one visit: the patient first, the visit list next; its address stays inside the patient row
+  const p = { data: { patient: { hn: '001', address: { city: 'BKK' }, visits: [{ visitId: 'V-1' }] } } };
+  assert.deepEqual(findTables(p).map((x) => x.path), ['data.patient', 'data.patient.visits']);
+  // a search result: the list of items beats the one-field wrapper
+  assert.deepEqual(findTables({ data: { search: { total: 2, items: [{ a: 1 }, { a: 2 }] } } }).map((x) => x.path), ['data.search.items', 'data.search']);
+  assert.deepEqual(findTables([1, 2, 3]), []);
+  assert.deepEqual(findTables('text'), []);
+});
+
+// the DOM fields xmlToObject reads, enough to stand in for DOMParser's elements
+const el = (name, attrs, ...kids) => ({
+  nodeType: 1,
+  localName: name.split(':').pop(),
+  attributes: Object.entries(attrs).map(([n, value]) => ({ name: n, localName: n.split(':').pop(), value })),
+  childNodes: kids.map((k) => (typeof k === 'string' ? { nodeType: 3, nodeValue: k } : k)),
+});
+
+test('response table: a SOAP response reads as its Body, repeated elements become a table', () => {
+  const visit = (id) => el('ns:visit', {}, '\n  ', el('ns:visitId', {}, id), '\n');
+  const envelope = el('soap:Envelope', { 'xmlns:soap': 'http://schemas.xmlsoap.org/soap/envelope/' },
+    el('soap:Header', {}, el('auth:token', {}, 'secret')),
+    el('soap:Body', {},
+      el('ns:GetPatientResponse', { 'xmlns:ns': 'urn:rama', xmlns: 'urn:default' },
+        el('ns:patient', { status: 'active' }, el('ns:hn', {}, ' 001 '), el('ns:address', {}, el('ns:city', {}, 'BKK')), visit('V-1'), visit('V-2')))));
+  const data = xmlToObject(envelope);
+  assert.deepEqual(data, {
+    GetPatientResponse: {
+      patient: { '@status': 'active', hn: '001', address: { city: 'BKK' }, visit: [{ visitId: 'V-1' }, { visitId: 'V-2' }] },
+    },
+  });
+  assert.deepEqual(findTables(data).map((x) => [x.path, x.rows.length]), [['GetPatientResponse.patient.visit', 2], ['GetPatientResponse.patient', 1]]);
+  // one visit stays an object, so it reads as patient columns, not a list
+  const one = xmlToObject(el('patients', {}, el('patient', { id: '7' }, 'note', visit('V-9'))));
+  assert.deepEqual(one, { patients: { patient: { '@id': '7', visit: { visitId: 'V-9' }, '#text': 'note' } } });
+});
+
+test('response table: search is case-insensitive and finds Thai text', () => {
+  const rows = [['001', 'สมชาย ใจดี'], ['002', 'Somsri'], ['003', '']];
+  assert.deepEqual(filterRows(rows, 'ใจดี'), [0]);
+  assert.deepEqual(filterRows(rows, 'SOMSRI'), [1]);
+  assert.deepEqual(filterRows(rows, '  '), [0, 1, 2]);
+  assert.deepEqual(filterRows(rows, 'none'), []);
+});
+
+test('response table: numbers sort as numbers, text in Thai order, empty cells last', () => {
+  const rows = [['10', 'ข'], ['', 'ก'], ['9', ''], ['100', 'a2'], ['-1', 'a10']];
+  assert.deepEqual(sortRows(rows, 0, 'asc'), [4, 2, 0, 3, 1]);
+  assert.deepEqual(sortRows(rows, 0, 'desc'), [3, 0, 2, 4, 1]);
+  assert.deepEqual(sortRows(rows, 1, 'asc').map((i) => rows[i][1]), ['ก', 'ข', 'a2', 'a10', '']);
+});
+
+test('response table: cell text for arrays, objects and empty values', () => {
+  assert.equal(cellText(null), '');
+  assert.equal(cellText(undefined), '');
+  assert.equal(cellText(0), '0');
+  assert.equal(cellText(false), 'false');
+  assert.equal(cellText([1, 'a', null]), '1, a, ');
+  assert.equal(cellText([{ a: 1 }, { a: 2 }]), '[2 items]');
+  assert.equal(cellText({ a: 1 }), '{"a":1}');
+  const long = cellText({ text: 'x'.repeat(200) });
+  assert.equal(long.length, 120);
+  assert.ok(long.endsWith('…'));
 });

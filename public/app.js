@@ -1,6 +1,7 @@
 // Hyperion UI — plain JS, no build step.
 import { t, tr, applyDom, lang, setLang } from './i18n.js';
 import { THEMES, currentTheme, applyTheme } from './themes.js';
+import { findTables, xmlToObject, columnsOf, flatRow, filterRows, sortRows } from './table.js';
 
 applyDom();
 
@@ -1916,15 +1917,17 @@ function renderResult() {
   for (const w of r.warnings ?? []) if (!(fault && /^SOAP Fault:/.test(w))) banners.push(`<div class="banner warn">${esc(tr(w))}</div>`);
   const resp = r.response;
   const maskFields = state.view === 'flow' ? DEFAULT_MASK : state.req?.maskFields ?? DEFAULT_MASK;
-  let bodyHtml = '';
+  bodyData = null;
   if (resp?.json !== undefined) {
     const shown = $('unmask').checked ? resp.json : mask(resp.json, maskFields);
-    bodyHtml = `<pre>${hlJSON(JSON.stringify(shown, null, 2))}</pre>`;
+    bodyData = { raw: `<pre>${hlJSON(JSON.stringify(shown, null, 2))}</pre>`, rawLabel: 'JSON', tables: findTables(shown) };
   } else if (isXmlBody(resp?.text, resp?.headers)) {
     const shown = $('unmask').checked ? resp.text : maskXML(resp.text, maskFields);
-    bodyHtml = `<pre class="xml">${hlXML(prettyXML(shown)).trimEnd()}</pre>`;
-  } else if (resp?.text) bodyHtml = `<pre>${esc(resp.text)}</pre>`;
-  $('tab-body').innerHTML = banners.join('') + (bodyHtml || (banners.length ? '' : t('<div class="empty">No body</div>')));
+    bodyData = { raw: `<pre class="xml">${hlXML(prettyXML(shown)).trimEnd()}</pre>`, rawLabel: 'XML', tables: xmlTables(shown) };
+  } else if (resp?.text) bodyData = { raw: `<pre>${esc(resp.text)}</pre>`, tables: [] };
+  if (bodyView.result !== r) Object.assign(bodyView, { result: r, tableIndex: 0, sort: null });
+  $('tab-body').innerHTML = banners.join('') + (bodyData ? bodyBar() + '<div id="bodyView"></div>' : banners.length ? '' : t('<div class="empty">No body</div>'));
+  if (bodyData) paintBody();
 
   const tests = r.tests ?? [];
   const failed = tests.filter((t) => !t.pass).length;
@@ -1945,6 +1948,144 @@ function renderResult() {
   else if (!resp && (r.logs ?? []).length && !r.error) selectTab('log');
   else selectTab('body');
 }
+
+// ---------- response body: table or raw view, both searchable ----------
+const BODY_KEY = 'hyperion.bodyView';
+const ROW_LIMIT = 500;
+let bodyData = null; // { raw: highlighted <pre>, rawLabel, tables: findTables() of the masked JSON or XML }
+const bodyView = { mode: readBodyMode(), tableIndex: 0, query: '', sort: null, result: null };
+function readBodyMode() {
+  try {
+    return localStorage.getItem(BODY_KEY) === 'table' ? 'table' : 'raw';
+  } catch {
+    return 'raw';
+  }
+}
+function xmlTables(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  return doc.getElementsByTagName('parsererror').length ? [] : findTables(xmlToObject(doc.documentElement));
+}
+const bodyMode = () => (bodyView.mode === 'table' && bodyData.tables.length ? 'table' : 'raw');
+
+function bodyBar() {
+  const { tables } = bodyData;
+  const mode = bodyMode();
+  const seg = tables.length
+    ? `<div class="seg" role="radiogroup">${[['raw', bodyData.rawLabel], ['table', t('Table')]].map(([v, label]) => `<label><input type="radio" name="bodyMode" value="${v}"${mode === v ? ' checked' : ''}>${label}</label>`).join('')}</div>`
+    : '';
+  const pick = mode === 'table' && tables.length > 1
+    ? `<select id="bodyTable">${tables.map((x, i) => `<option value="${i}"${i === bodyView.tableIndex ? ' selected' : ''}>${esc(x.path)} (${x.rows.length})</option>`).join('')}</select>`
+    : '';
+  return `<div class="body-bar">${seg}${pick}<input type="search" id="bodyQuery" placeholder="${esc(t('Search in the response'))}" value="${esc(bodyView.query)}" autocomplete="off" spellcheck="false"><span class="meta" id="bodyCount"></span></div>`;
+}
+
+// text with every match of q in <mark>; q is already lower-case
+function marked(text, q) {
+  const low = text.toLocaleLowerCase();
+  if (!q || low.length !== text.length) return esc(text);
+  let out = '';
+  let last = 0;
+  for (let i = low.indexOf(q); i !== -1; i = low.indexOf(q, last)) {
+    out += `${esc(text.slice(last, i))}<mark>${esc(text.slice(i, i + q.length))}</mark>`;
+    last = i + q.length;
+  }
+  return out + esc(text.slice(last));
+}
+
+function paintBody() {
+  const q = bodyView.query.trim().toLocaleLowerCase();
+  const view = $('bodyView');
+  if (bodyMode() === 'raw') {
+    view.innerHTML = bodyData.raw;
+    const n = q ? markRaw(view.firstElementChild, q) : 0;
+    $('bodyCount').textContent = q ? t('{n} matches', { n }) : '';
+    const first = view.querySelector('mark');
+    first?.classList.add('cur');
+    first?.scrollIntoView({ block: 'center' });
+    return;
+  }
+  const table = bodyData.tables[bodyView.tableIndex] ?? bodyData.tables[0];
+  table.columns ??= columnsOf(table.rows);
+  table.flat ??= table.rows.map((row) => flatRow(row, table.columns));
+  const cell = (text) => `<td title="${esc(text)}">${marked(text, q)}</td>`;
+  if (table.rows.length === 1) {
+    const pairs = table.columns.map((c, i) => [c, table.flat[0][i]]);
+    const hits = filterRows(pairs, q).map((i) => pairs[i]);
+    $('bodyCount').textContent = t('{n} of {total} fields', { n: hits.length, total: pairs.length });
+    view.innerHTML = `<table class="rtable fields-view"><thead><tr><th>${t('Field')}</th><th>${t('Value')}</th></tr></thead><tbody>${hits.map(([c, v]) => `<tr><th scope="row">${marked(c, q)}</th>${cell(v)}</tr>`).join('')}</tbody></table>`;
+    return;
+  }
+  const { sort } = bodyView;
+  const order = sort ? sortRows(table.flat, sort.col, sort.dir) : table.flat.map((_, i) => i);
+  const keep = new Set(filterRows(table.flat, q));
+  const rows = order.filter((i) => keep.has(i));
+  $('bodyCount').textContent = t('{n} of {total} rows', { n: rows.length, total: table.flat.length });
+  const head = table.columns
+    .map((c, i) => `<th data-col="${i}"${sort?.col === i ? ` aria-sort="${sort.dir === 'asc' ? 'ascending' : 'descending'}"` : ''}>${esc(c)}${sort?.col === i ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`)
+    .join('');
+  const body = rows.slice(0, ROW_LIMIT).map((i) => `<tr><td class="rn">${i + 1}</td>${table.flat[i].map(cell).join('')}</tr>`).join('');
+  const more = rows.length > ROW_LIMIT ? `<div class="banner warn">${t('Showing {n} of {total} rows — search to narrow down', { n: ROW_LIMIT, total: rows.length })}</div>` : '';
+  view.innerHTML = `<table class="rtable"><thead><tr><th class="rn">#</th>${head}</tr></thead><tbody>${body}</tbody></table>${more}`;
+}
+
+// wraps matches inside each text node of the highlighted <pre>; returns the count
+function markRaw(pre, q) {
+  const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  let n = 0;
+  for (const node of nodes) {
+    if (!node.data.toLocaleLowerCase().includes(q)) continue;
+    const span = document.createElement('span');
+    span.innerHTML = marked(node.data, q);
+    n += span.querySelectorAll('mark').length;
+    node.replaceWith(...span.childNodes);
+  }
+  return n;
+}
+
+function nextMark() {
+  const marks = [...$('bodyView').querySelectorAll('mark')];
+  if (!marks.length) return;
+  const at = marks.findIndex((m) => m.classList.contains('cur'));
+  marks[at]?.classList.remove('cur');
+  const next = marks[(at + 1) % marks.length];
+  next.classList.add('cur');
+  next.scrollIntoView({ block: 'center' });
+}
+
+let bodyTimer;
+const tabBody = $('tab-body');
+tabBody.addEventListener('input', (e) => {
+  if (e.target.id !== 'bodyQuery') return;
+  bodyView.query = e.target.value;
+  clearTimeout(bodyTimer);
+  bodyTimer = setTimeout(paintBody, 120);
+});
+tabBody.addEventListener('keydown', (e) => {
+  if (e.target.id !== 'bodyQuery' || e.key !== 'Enter' || bodyMode() !== 'raw') return;
+  e.preventDefault();
+  nextMark();
+});
+tabBody.addEventListener('change', (e) => {
+  if (e.target.name === 'bodyMode') {
+    bodyView.mode = e.target.value;
+    try {
+      localStorage.setItem(BODY_KEY, bodyView.mode);
+    } catch {}
+  } else if (e.target.id === 'bodyTable') Object.assign(bodyView, { tableIndex: Number(e.target.value), sort: null });
+  else return;
+  tabBody.querySelector('.body-bar').outerHTML = bodyBar();
+  paintBody();
+});
+tabBody.addEventListener('click', (e) => {
+  const th = e.target.closest('th[data-col]');
+  if (!th) return;
+  const col = Number(th.dataset.col);
+  const s = bodyView.sort;
+  bodyView.sort = s?.col !== col ? { col, dir: 'asc' } : s.dir === 'asc' ? { col, dir: 'desc' } : null;
+  paintBody();
+});
 
 function renderLog() {
   $('logCount').textContent = state.logs.length || '';

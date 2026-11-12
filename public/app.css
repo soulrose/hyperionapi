@@ -710,3 +710,31 @@ body.soap-mode #lint, body.soap-mode .q-main > .sub-head, body.soap-mode .vars-w
 .op-run-state.ok { color: var(--pass); }
 .op-run-state.err { color: var(--exec); }
 .op-run-state.wait { opacity: .6; }
+
+/* ---------- response body: table view + search ---------- */
+.body-bar {
+  position: sticky; top: 0; left: 0; z-index: 2; height: 42px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  background: var(--glass-strong); border-bottom: 1px solid var(--line-2); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+}
+.body-bar .seg { flex-shrink: 0; }
+.body-bar .seg label { padding: 3px 11px; white-space: nowrap; }
+.body-bar input[type=search], .body-bar select { font-size: 12.5px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--ink); }
+.body-bar input[type=search] { flex: 1; min-width: 70px; max-width: 320px; }
+.body-bar input[type=search]:focus, .body-bar select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.body-bar select { max-width: 240px; }
+.body-bar .meta { white-space: nowrap; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rtable { border-collapse: separate; border-spacing: 0; font: var(--code-size, 13px)/1.5 var(--mono); min-width: 100%; }
+.rtable th, .rtable td { padding: 5px 12px; border-bottom: 1px solid var(--line-2); text-align: left; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+.rtable thead th {
+  position: sticky; top: 42px; z-index: 1; background: var(--glass-strong); color: var(--ink-2); font: 600 12px/1.5 var(--sans);
+  border-bottom: 1px solid var(--line); cursor: pointer; user-select: none;
+}
+.rtable thead th:hover { color: var(--ink); }
+.rtable thead th[aria-sort] { color: var(--accent); }
+.rtable tbody tr:hover td, .rtable tbody tr:hover th { background: var(--accent-soft); }
+.rtable .rn { color: var(--ink-3); text-align: right; width: 1%; cursor: default; }
+.rtable.fields-view thead th { cursor: default; }
+.rtable.fields-view tbody th { color: var(--ink-3); font-weight: 400; width: 1%; }
+.rtable.fields-view td { white-space: pre-wrap; word-break: break-word; max-width: none; }
+.tab-body mark { background: color-mix(in srgb, var(--schema) 28%, transparent); color: inherit; border-radius: 3px; }
+.tab-body mark.cur { background: var(--schema); color: #fff; }

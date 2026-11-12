@@ -422,6 +422,15 @@ const TH = {
   'Other collections': 'collection อื่น',
   'New SOAP collection {name} → {dir}': 'สร้าง SOAP collection {name} → {dir}',
   'WSDL {service} → {count} SOAP requests in {dir}{address}': 'WSDL {service} → {count} SOAP request ใน {dir}{address}',
+  // response body: table view + search
+  'Table': 'ตาราง',
+  'Search in the response': 'ค้นในผลลัพธ์',
+  '{n} of {total} rows': '{n} จาก {total} แถว',
+  '{n} of {total} fields': '{n} จาก {total} ช่อง',
+  '{n} matches': 'เจอ {n} ที่',
+  'Field': 'ชื่อช่อง',
+  'Showing {n} of {total} rows — search to narrow down': 'แสดง {n} จาก {total} แถว — พิมพ์ค้นเพื่อให้เหลือน้อยลง',
+  '[{n} items]': '[{n} รายการ]',
 };
 
 const fill = (s, vars) => (vars ? s.replace(/\{(\w+)\}/g, (m, k) => (Object.hasOwn(vars, k) ? String(vars[k]) : m)) : s);

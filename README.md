@@ -83,6 +83,7 @@ When a request opens (no network): if this env was never synced, it borrows the 
 - Editor: autocomplete as you type, or `Ctrl+Space` · `Ctrl+Enter` sends · `Ctrl+S` saves.
 - Resize: drag the request pane's right edge (request / response width) and the Variables bar (height); **Collapse** hides Variables.
 - Response: fields listed in `masking.fields` of `_collection.yaml` are hidden; tick "Show patient data" to see real values.
+- **Table view:** a response opens as raw **JSON** or **XML**; switch to **Table** to see a list in it (for example `data.patients`, or the repeated elements of a SOAP Body such as `GetPatientResponse.patient.visit`) as a table, biggest list first; pick another list from the menu when there are several. Click a column header to sort (▲ / ▼ / off). Nested fields show as `address.city` columns, and a single record shows as Field / Value. **Search in the response** filters rows and highlights matches; on **JSON** (or XML / text) it highlights matches in the raw body, and Enter jumps to the next one. Masked fields stay masked in the table. The choice of Table or raw is remembered.
 - Token chip (top right, when a login is used): time left, **Renew** / **Clear**.
 - **Import** — drop a Postman collection (v2.1) or environment (.json).
 
@@ -210,4 +211,4 @@ npm test
 
 ## About
 
-Version 1.5.0 (V.01.05.00) · developer: soulrose
+Version 1.6.0 (V.01.06.00) · developer: soulrose
