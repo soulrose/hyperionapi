@@ -1220,3 +1220,22 @@ test('variables for {{…}} hints: names from env / collection / global, values 
     mocks2.close();
   }
 });
+
+test('GraphQL: one operation with several root fields splits per field, each with only its variables', async () => {
+  const { splitFields } = await import('../lib/runner.mjs');
+  const query = `query PatientAndVisit($id: ID!, $mrn: String) {
+  patientByHn(hn: $mrn) { id ...stamp }
+  byId: visitById(id: $id) { id appointmentId }
+}
+fragment stamp on Patient { timestampField { createdAt } }`;
+  const parts = splitFields(query, { id: '9', mrn: 'HN-0001' });
+  assert.deepEqual(parts.map((p) => p.name), ['patientByHn', 'byId']);
+  assert.match(parts[0].query, /^query PatientAndVisit\(\$mrn: String\) \{/);
+  assert.match(parts[0].query, /fragment stamp/);
+  assert.deepEqual(parts[0].variables, { mrn: 'HN-0001' });
+  assert.match(parts[1].query, /^query PatientAndVisit\(\$id: ID!\) \{\n  byId: visitById/);
+  assert.doesNotMatch(parts[1].query, /fragment/);
+  assert.deepEqual(parts[1].variables, { id: '9' });
+  assert.deepEqual(splitFields('{ a }'), []);
+  assert.deepEqual(splitFields('query A { a } query B { b }'), []);
+});

@@ -1342,17 +1342,28 @@ async function validate() {
   } catch (e) {
     notes.push(t('Variables is not valid JSON: {error}', { error: e.message }));
   }
-  let operations = 0;
+  let parts = { kind: 'fields', list: [] };
   if (isGql()) {
     const v = await api('/api/validate', { file: state.req.file, env: state.env.name, query: $('query').value });
     notes.push(...v.errors);
-    operations = v.operations;
+    parts = v.parts ?? parts;
   }
-  $('sendAll').hidden = operations < 2;
-  $('sendAll').textContent = t('Send all {n}', { n: operations });
-  $('sendAll').title = t('Send every operation in the box, one at a time — stops at the first error');
+  paintRunPick(parts);
   lint.innerHTML = notes.map((n) => `<li>${esc(n)}</li>`).join('');
 }
+
+// Run menu next to Send: the whole query or one part of it — an operation, or a root field of the only operation.
+// The pick is kept by name while the query is edited.
+function paintRunPick({ kind, list }) {
+  const sel = $('runPick');
+  const keep = sel.value;
+  sel.hidden = list.length < 2;
+  sel.dataset.kind = kind;
+  const all = kind === 'operations' ? t('All {n} operations (one by one)', { n: list.length }) : t('All {n} fields', { n: list.length });
+  sel.innerHTML = `<option value="">${esc(all)}</option>${list.map((p) => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')}`;
+  sel.value = list.some((p) => p.name === keep) ? keep : '';
+}
+const runPick = () => ($('runPick').hidden ? null : { kind: $('runPick').dataset.kind, name: $('runPick').value });
 
 // ---------- autocomplete ----------
 const ac = { items: [], index: 0, prefix: '' };
@@ -1792,10 +1803,20 @@ async function send() {
   } catch {
     return validate();
   }
+  const pick = isGql() ? runPick() : null;
+  if (pick?.kind === 'operations' && !pick.name) return sendAll();
   const body = { file: state.req.file, env: state.env.name, variables, auth: readAuth(), headers: readHeaders(), scripts: readScripts() };
   if (isSoap()) body.soap = readSoap();
   else if (state.req.kind !== 'HttpRequest') body.query = $('query').value;
-  const op = currentOp();
+  let op = currentOp();
+  if (pick?.name) {
+    const split = await api('/api/graphql/split', { query: body.query, variables });
+    const part = split[pick.kind].find((p) => p.name === pick.name);
+    if (part) {
+      Object.assign(body, { query: part.query, variables: part.variables });
+      op = { type: part.type, name: part.name };
+    }
+  }
   // a SOAP call is a POST like a REST write: sent without the mutation question
   const writes = isSoap() || (state.req.kind === 'HttpRequest' ? !['GET', 'HEAD', 'OPTIONS'].includes(state.req.method) : op.type === 'mutation');
   // a GraphQL mutation sent to prod (protected env) asks first: ตกลง / ยกเลิก. Other envs, queries and REST go straight out
@@ -1852,7 +1873,7 @@ async function sendAll() {
   const base = { file: state.req.file, env: state.env.name, auth: readAuth(), headers: readHeaders(), scripts: readScripts() };
   state.opRuns = operations.map((op) => ({ op, result: null }));
   state.opBusy = true;
-  $('send').disabled = $('sendAll').disabled = true;
+  $('send').disabled = $('runPick').disabled = true;
   $('send').classList.add('busy');
   try {
     for (const run of state.opRuns) {
@@ -1865,7 +1886,7 @@ async function sendAll() {
     }
   } finally {
     state.opBusy = false;
-    $('send').disabled = $('sendAll').disabled = false;
+    $('send').disabled = $('runPick').disabled = false;
     $('send').classList.remove('busy');
     paintOpRuns();
     refreshToken();
@@ -2252,7 +2273,6 @@ $('unmask').onchange = () => state.result && renderResult();
 
 // ---------- buttons ----------
 $('send').onclick = send;
-$('sendAll').onclick = sendAll;
 // request autosave: query, variables, Authorization and Headers are written ~0.8 s after the last edit
 let saveTimer;
 function scheduleSave() {

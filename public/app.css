@@ -150,6 +150,7 @@ code { font-family: var(--mono); font-size: .95em; }
   border: 0; background: var(--fill); border-radius: var(--r-ctl); padding: 5px 12px; cursor: pointer; color: var(--ink);
   transition: background-color .15s;
 }
+.run-pick { border: 0; background: var(--fill); border-radius: var(--r-ctl); padding: 5px 8px; color: var(--ink); max-width: 240px; cursor: pointer; }
 .ghost:hover:not(:disabled) { background: var(--fill-2); }
 .ghost:disabled { opacity: .45; cursor: default; }
 .small { padding: 3px 10px; font-size: 12.5px; }

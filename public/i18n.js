@@ -11,8 +11,9 @@ const TH = {
   "This computer sets NODE_TLS_REJECT_UNAUTHORIZED=0, which turns checks off for every Node program — Hyperion follows this switch instead": "เครื่องนี้ตั้ง NODE_TLS_REJECT_UNAUTHORIZED=0 ไว้ ซึ่งปิดการตรวจใบรับรองของทุกโปรแกรม Node — Hyperion ใช้สวิตช์นี้แทน",
   "Saved for env {env} only — other envs keep their own": "จำแยกของ env {env} เท่านั้น — env อื่นยังใช้ค่าของตัวเอง",
   // send every operation in the box
-  "Send all {n}": "ส่งทั้ง {n} operation",
-  "Send every operation in the box, one at a time — stops at the first error": "ส่งทุก operation ในช่องทีละอัน — หยุดเมื่อเจอ error อันแรก",
+  "Send the whole query, or one part of it": "ส่งทั้ง query หรือเลือกส่งบางส่วน",
+  "All {n} operations (one by one)": "ทั้งหมด {n} operation (ทีละอัน)",
+  "All {n} fields": "ทั้งหมด {n} field",
   "Send {n} operations?": "ส่ง {n} operation?",
   "To {env} — real data · these mutations change data: {list}": "ไปที่ {env} — ข้อมูลจริง · mutation เหล่านี้แก้ข้อมูล: {list}",
   "Not sent": "ไม่ได้ส่ง",

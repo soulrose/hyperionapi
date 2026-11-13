@@ -68,7 +68,7 @@ When a request opens (no network): if this env was never synced, it borrows the 
 
 ## Request tabs (like Postman)
 
-**Several operations in one box:** GraphQL runs one operation per request, so **Send** answers with an error for a box with two or more. A **Send all N** button appears next to it: each operation goes out on its own, in order, with the fragments and variables it uses, and each gets a result row. It stops at the first error; earlier operations are not rolled back. Prod asks first and lists the mutations.
+**Several operations or fields in one box:** a **Run** menu appears next to **Send** when the box holds two or more operations, or one operation asking for two or more root fields (e.g. `patient` and `visits`). Pick one to send only that part, with just the variables and fragments it uses, or **All**. All fields go out as the one request they are; all operations go out one by one (GraphQL runs one operation per request), in order, each with a result row, stopping at the first error (earlier ones are not rolled back). Prod asks first and lists the mutations.
 
 - **Query** — on the left, the schema's fields (loaded by itself). Open an object field: the first row **All fields (n)** ticks / unticks every plain field inside it. A field with arguments shows inputs; what you type goes to Variables and the argument is added to the query as a `$variable` (optional arguments have a checkbox). Ticking a field writes the query; unticking removes it; typing the query by hand updates the ticks. **«** folds the panel down to a "Schema" strip; drag its right edge to resize (double-click resets).
 - **Authorization** — Inherit from collection (default), None, Bearer Token, Basic, API Key. The choice belongs to the env on screen (`execution.authByEnv.<env>` in the file); other envs keep their own. A token can be an env variable such as `{{bearer_token}}`.
@@ -212,4 +212,4 @@ npm test
 
 ## About
 
-Version 1.7.0 (V.01.07.00) · developer: soulrose
+Version 1.8.0 (V.01.08.00) · developer: soulrose
