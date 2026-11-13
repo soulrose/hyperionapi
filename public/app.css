@@ -196,6 +196,11 @@ code { font-family: var(--mono); font-size: .95em; }
 .envs button:hover { color: var(--ink); }
 .envs button[aria-checked="true"] { background: var(--glass-strong); color: var(--ink); box-shadow: 0 1px 2px rgba(15, 32, 56, .12), 0 0 0 1px var(--outline); }
 .envs button[aria-checked="true"].protected { background: var(--exec); color: #fff; box-shadow: 0 1px 2px rgba(229, 72, 77, .35), 0 3px 10px rgba(229, 72, 77, .25); }
+.gear-btn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--r-ctl); background: transparent; color: var(--ink-2); cursor: pointer; transition: background-color .15s, color .15s; }
+.gear-btn:hover { background: var(--fill); color: var(--ink); }
+.gear-btn:hover svg { transform: rotate(30deg); }
+.gear-btn svg { transition: transform .3s; }
+.token[hidden] + .gear-btn { margin-left: auto; }
 .token { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
 .token-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pass); box-shadow: 0 0 0 3px var(--pass-soft); }
 .token.warn .token-dot { background: var(--schema); box-shadow: 0 0 0 3px var(--schema-soft); }

@@ -354,7 +354,7 @@ async function renderProjects() {
   if (!p.current) $('projectName').textContent = t('No project open');
   const item = (pr) => `<button role="menuitem" data-root="${esc(pr.root)}"${pr.root === p.current ? ' aria-current="true"' : ''}><span>${esc(pr.name)}</span><small>${esc(pr.root)}</small></button>`;
   $('projectMenu').innerHTML = list.map(item).join('') + (list.length ? '<hr>' : '') +
-    `<button role="menuitem" data-act="open"><span>${t('Open folder…')}</span></button><button role="menuitem" data-act="new"><span>${t('New project…')}</span></button><button role="menuitem" data-act="importProject"><span>${t('Import project…')}</span></button>${p.current ? `<button role="menuitem" data-act="exportProject"><span>${t('Export project')}</span></button>` : ''}<hr><button role="menuitem" data-act="settings"><span>${t('Settings')}</span></button><button role="menuitem" data-act="about"><span>${t('About Hyperion')}</span></button>`;
+    `<button role="menuitem" data-act="open"><span>${t('Open folder…')}</span></button><button role="menuitem" data-act="new"><span>${t('New project…')}</span></button><button role="menuitem" data-act="importProject"><span>${t('Import project…')}</span></button>${p.current ? `<button role="menuitem" data-act="exportProject"><span>${t('Export project')}</span></button>` : ''}<hr><button role="menuitem" data-act="about"><span>${t('About Hyperion')}</span></button>`;
   $('recent').innerHTML = p.projects.map((pr) => `<li>${item(pr)}</li>`).join('');
 }
 
@@ -670,13 +670,13 @@ const onProjectClick = (e) => {
   if (b.dataset.root) switchProject(b.dataset.root);
   else if (b.dataset.act === 'open') openFolder();
   else if (b.dataset.act === 'new') newProject();
-  else if (b.dataset.act === 'settings') showSettings();
   else if (b.dataset.act === 'exportProject') exportProject();
   else if (b.dataset.act === 'importProject') projectPick.click();
   else if (b.dataset.act === 'about') showAbout();
 };
 $('projectMenu').addEventListener('click', onProjectClick);
 $('brand').onclick = showAbout;
+$('settingsBtn').onclick = showSettings;
 $('recent').addEventListener('click', onProjectClick);
 $('projectBtn').onclick = (e) => {
   e.stopPropagation();

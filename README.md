@@ -26,7 +26,7 @@ npm run shortcut        # Windows: puts a "Hyperion API" icon on the Desktop
 - Everything saves itself: the URL in the red bar, query, variables, Authorization, Headers, Scripts, flows, the env editor and collection settings — there is no Save button (Ctrl+S saves at once).
 - Click the **Hyperion** logo (top left) for About: version and developer.
 
-**Language:** the UI is English by default. Switch to Thai from the project menu → **Settings** → Language: ไทย (remembered on this computer). Thai text lives in `public/i18n.js` (UI) and `public/i18n-server.js` (server messages).
+**Language:** the UI is English by default. Switch to Thai with the gear button (top right) → **Settings** → Language: ไทย (remembered on this computer). Thai text lives in `public/i18n.js` (UI) and `public/i18n-server.js` (server messages).
 
 **Themes:** Settings → **Theme**: Modern (default) or Frutiger Aero (Vista) — glass panes on a sky background, glossy buttons. Applied at once and remembered. To add a theme, write `public/themes/<id>.css` (rules under `html[data-theme="<id>"]`) and add one line to the list in `public/themes.js`.
 
@@ -212,4 +212,4 @@ npm test
 
 ## About
 
-Version 1.8.0 (V.01.08.00) · developer: soulrose
+Version 1.8.1 (V.01.08.01) · developer: soulrose
