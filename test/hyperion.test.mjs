@@ -1239,3 +1239,12 @@ fragment stamp on Patient { timestampField { createdAt } }`;
   assert.deepEqual(splitFields('{ a }'), []);
   assert.deepEqual(splitFields('query A { a } query B { b }'), []);
 });
+
+test('response table: Copy gives whole values and tab-separated rows', async () => {
+  const { copyValues, toTsv, columnsOf } = await import('../public/table.js');
+  const rows = [{ hn: '001', note: 'a\tb\nc', ward: { code: 'W1' }, tags: ['x', 'y'], extra: { deep: { x: { y: 1 } } }, gone: null }];
+  const cols = columnsOf(rows);
+  const v = copyValues(rows[0], cols);
+  assert.deepEqual(v, ['001', 'a\tb\nc', 'W1', '["x","y"]', '{"y":1}', '']);
+  assert.equal(toTsv([cols, v]), 'hn\tnote\tward.code\ttags\textra.deep.x\tgone\n001\ta b c\tW1\t["x","y"]\t{"y":1}\t');
+});

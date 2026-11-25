@@ -85,6 +85,17 @@ export function cellText(v) {
   return String(v);
 }
 
+/** what Copy puts on the clipboard: the whole value (objects and lists as JSON), never the shortened cell text */
+export function copyValues(row, columns) {
+  const f = flatten(row);
+  return columns.map((c) => (f[c] == null ? '' : typeof f[c] === 'object' ? JSON.stringify(f[c]) : String(f[c])));
+}
+
+/** tab-separated, pastes into Excel / Google Sheets as cells */
+export function toTsv(lines) {
+  return lines.map((cells) => cells.map((c) => String(c).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
+}
+
 export function flatRow(row, columns) {
   const f = flatten(row);
   return columns.map((c) => cellText(f[c]));

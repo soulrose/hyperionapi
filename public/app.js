@@ -1,7 +1,7 @@
 // Hyperion UI — plain JS, no build step.
 import { t, tr, applyDom, lang, setLang } from './i18n.js';
 import { THEMES, currentTheme, applyTheme } from './themes.js';
-import { findTables, xmlToObject, columnsOf, flatRow, filterRows, sortRows } from './table.js';
+import { findTables, xmlToObject, columnsOf, flatRow, filterRows, sortRows, copyValues, toTsv } from './table.js';
 import { initVarHints } from './varhint.js';
 
 applyDom();
@@ -1998,7 +1998,8 @@ function bodyBar() {
   const pick = mode === 'table' && tables.length > 1
     ? `<select id="bodyTable">${tables.map((x, i) => `<option value="${i}"${i === bodyView.tableIndex ? ' selected' : ''}>${esc(x.path)} (${x.rows.length})</option>`).join('')}</select>`
     : '';
-  return `<div class="body-bar">${seg}${pick}<input type="search" id="bodyQuery" placeholder="${esc(t('Search in the response'))}" value="${esc(bodyView.query)}" autocomplete="off" spellcheck="false"><span class="meta" id="bodyCount"></span></div>`;
+  const copy = mode === 'table' ? `<button type="button" class="ghost small" id="bodyCopy" title="${esc(t('Copy the rows on screen (all of them, search applied) — paste into Excel'))}">${t('Copy table')}</button>` : '';
+  return `<div class="body-bar">${seg}${pick}<input type="search" id="bodyQuery" placeholder="${esc(t('Search in the response'))}" value="${esc(bodyView.query)}" autocomplete="off" spellcheck="false"><span class="meta" id="bodyCount"></span>${copy}</div>`;
 }
 
 // text with every match of q in <mark>; q is already lower-case
@@ -2029,25 +2030,49 @@ function paintBody() {
   const table = bodyData.tables[bodyView.tableIndex] ?? bodyData.tables[0];
   table.columns ??= columnsOf(table.rows);
   table.flat ??= table.rows.map((row) => flatRow(row, table.columns));
-  const cell = (text) => `<td title="${esc(text)}">${marked(text, q)}</td>`;
+  const copyBtn = (r, c) => `<button type="button" class="cell-copy" data-r="${r}" data-c="${c}" tabindex="-1" title="${esc(t('Copy value'))}" aria-label="${esc(t('Copy value'))}">${COPY_ICON}</button>`;
+  const cell = (text, r, c) => `<td title="${esc(text)}">${copyBtn(r, c)}${marked(text, q)}</td>`;
   if (table.rows.length === 1) {
     const pairs = table.columns.map((c, i) => [c, table.flat[0][i]]);
-    const hits = filterRows(pairs, q).map((i) => pairs[i]);
+    const hits = filterRows(pairs, q);
+    bodyView.shown = hits;
     $('bodyCount').textContent = t('{n} of {total} fields', { n: hits.length, total: pairs.length });
-    view.innerHTML = `<table class="rtable fields-view"><thead><tr><th>${t('Field')}</th><th>${t('Value')}</th></tr></thead><tbody>${hits.map(([c, v]) => `<tr><th scope="row">${marked(c, q)}</th>${cell(v)}</tr>`).join('')}</tbody></table>`;
+    view.innerHTML = `<table class="rtable fields-view"><thead><tr><th>${t('Field')}</th><th>${t('Value')}</th></tr></thead><tbody>${hits.map((i) => `<tr><th scope="row">${marked(pairs[i][0], q)}</th>${cell(pairs[i][1], 0, i)}</tr>`).join('')}</tbody></table>`;
     return;
   }
   const { sort } = bodyView;
   const order = sort ? sortRows(table.flat, sort.col, sort.dir) : table.flat.map((_, i) => i);
   const keep = new Set(filterRows(table.flat, q));
   const rows = order.filter((i) => keep.has(i));
+  bodyView.shown = rows;
   $('bodyCount').textContent = t('{n} of {total} rows', { n: rows.length, total: table.flat.length });
   const head = table.columns
     .map((c, i) => `<th data-col="${i}"${sort?.col === i ? ` aria-sort="${sort.dir === 'asc' ? 'ascending' : 'descending'}"` : ''}>${esc(c)}${sort?.col === i ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</th>`)
     .join('');
-  const body = rows.slice(0, ROW_LIMIT).map((i) => `<tr><td class="rn">${i + 1}</td>${table.flat[i].map(cell).join('')}</tr>`).join('');
+  const body = rows.slice(0, ROW_LIMIT).map((i) => `<tr><td class="rn">${i + 1}</td>${table.flat[i].map((text, c) => cell(text, i, c)).join('')}</tr>`).join('');
   const more = rows.length > ROW_LIMIT ? `<div class="banner warn">${t('Showing {n} of {total} rows — search to narrow down', { n: ROW_LIMIT, total: rows.length })}</div>` : '';
   view.innerHTML = `<table class="rtable"><thead><tr><th class="rn">#</th>${head}</tr></thead><tbody>${body}</tbody></table>${more}`;
+}
+
+const COPY_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+// Copy: the full value of one cell, or the rows on screen as tab-separated text
+async function copyBody(target) {
+  const table = bodyData.tables[bodyView.tableIndex] ?? bodyData.tables[0];
+  table.copy ??= table.rows.map((row) => copyValues(row, table.columns));
+  let text;
+  if (target.id === 'bodyCopy') {
+    text = table.rows.length === 1
+      ? toTsv(bodyView.shown.map((i) => [table.columns[i], table.copy[0][i]]))
+      : toTsv([table.columns, ...bodyView.shown.map((i) => table.copy[i])]);
+  } else text = table.copy[target.dataset.r][target.dataset.c];
+  try {
+    await navigator.clipboard.writeText(text);
+    target.classList.add('copied');
+    setTimeout(() => target.classList.remove('copied'), 1200);
+  } catch {
+    alert(t('Could not copy — the clipboard is blocked'));
+  }
 }
 
 // wraps matches inside each text node of the highlighted <pre>; returns the count
@@ -2101,6 +2126,8 @@ tabBody.addEventListener('change', (e) => {
   paintBody();
 });
 tabBody.addEventListener('click', (e) => {
+  const copy = e.target.closest('.cell-copy, #bodyCopy');
+  if (copy) return void copyBody(copy);
   const th = e.target.closest('th[data-col]');
   if (!th) return;
   const col = Number(th.dataset.col);

@@ -76,7 +76,7 @@ schema โหลดเอง (ตอนเปิด request / เปลี่ย
 - **ยิงไปที่** (แดง) = URL ที่ request จะไปจริง · **Schema จาก** (เหลือง) = schema ที่ใช้ทำ autocomplete มาจากไหน ดึงเมื่อไหร่
 - Editor: พิมพ์แล้ว autocomplete ขึ้นเอง หรือ `Ctrl+Space` · `Ctrl+Enter` ยิง · `Ctrl+S` บันทึก query/variables ลงไฟล์
 - Response: field ใน `masking.fields` ของ `_collection.yaml` ถูกซ่อน ติ๊ก "แสดงข้อมูล" เพื่อดูค่าจริง
-- **มุมมองตาราง:** response เปิดเป็น **JSON** หรือ **XML** ดิบก่อน กด **ตาราง** เพื่อดูรายการในนั้น (เช่น `data.patients` หรือ element ที่ซ้ำกันใน SOAP Body เช่น `GetPatientResponse.patient.visit`) เป็นตาราง เลือกรายการที่ใหญ่ที่สุดก่อน ถ้ามีหลายรายการเลือกจากเมนูได้ คลิกหัวคอลัมน์เพื่อเรียง (▲ / ▼ / ไม่เรียง) field ซ้อนแสดงเป็นคอลัมน์แบบ `address.city` ถ้ามีข้อมูลเดียวจะแสดงเป็น ชื่อช่อง / ค่า ช่อง **ค้นในผลลัพธ์** กรองแถวและไฮไลต์คำที่เจอ ในโหมด **JSON** (หรือ XML / ข้อความ) จะไฮไลต์ใน body ดิบ กด Enter ไปที่ถัดไป field ที่ถูกซ่อนยังซ่อนอยู่ในตาราง และจำว่าเลือกตารางหรือแบบดิบไว้
+- **มุมมองตาราง:** response เปิดเป็น **JSON** หรือ **XML** ดิบก่อน กด **ตาราง** เพื่อดูรายการในนั้น (เช่น `data.patients` หรือ element ที่ซ้ำกันใน SOAP Body เช่น `GetPatientResponse.patient.visit`) เป็นตาราง เลือกรายการที่ใหญ่ที่สุดก่อน ถ้ามีหลายรายการเลือกจากเมนูได้ คลิกหัวคอลัมน์เพื่อเรียง (▲ / ▼ / ไม่เรียง) field ซ้อนแสดงเป็นคอลัมน์แบบ `address.city` ถ้ามีข้อมูลเดียวจะแสดงเป็น ชื่อช่อง / ค่า ช่อง **ค้นในผลลัพธ์** กรองแถวและไฮไลต์คำที่เจอ ในโหมด **JSON** (หรือ XML / ข้อความ) จะไฮไลต์ใน body ดิบ กด Enter ไปที่ถัดไป ชี้ที่ช่องจะมีปุ่ม **copy** ค่าทั้งหมดของช่องนั้น (object เป็น JSON) · ปุ่ม **Copy ตาราง** copy แถวที่แสดงอยู่ (ตามที่ค้น) เป็นข้อความคั่นด้วย tab วางใน Excel ได้ · field ที่ถูกซ่อนยังซ่อนอยู่ในตาราง และจำว่าเลือกตารางหรือแบบดิบไว้
 - **`{{ตัวแปร}}` ในช่องกรอก:** เอาเมาส์ชี้ช่อง (URL, header, auth, ค่าใน env) จะเห็นว่า `{{NAME}}` แต่ละตัวมีค่าอะไรใน env ที่เลือกอยู่และมาจากไหน (env, collection, runtime, …) · token, password, key แสดงแค่ตัวต้น · พิมพ์ `{{` จะขึ้นรายชื่อตัวแปร (รวม `$today`, `$uuid`, …) เลือกด้วย ↑ ↓ แล้ว Enter / Tab
 - Token chip มุมขวาบน (เมื่อใช้ login): เวลาที่เหลือ, ปุ่ม **ต่ออายุ** / **ล้าง**
 - **Import** — ลากไฟล์ Postman collection (v2.1) หรือ environment (.json) มาวาง
@@ -206,3 +206,7 @@ npm test
 ```
 
 26 tests: schema fallback (รวมยืม schema จาก dev), auth ระดับ request และแยกตาม env, schema explorer, flows, วาง cURL, ต่ออายุ token / 401 retry / single-flight, Keycloak, schema drift, prod guard, Postman import, pm shim, สร้าง/ย้าย/แยก collection, WebSocket / Socket.IO / gRPC, host เป็นตัวแปร env, Scripts ในแอป
+
+## License
+
+[MIT](LICENSE) © 2026 soulrose · npm package ที่ใช้ยังเป็น license เดิมของแต่ละตัว

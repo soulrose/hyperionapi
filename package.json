@@ -1,7 +1,9 @@
 {
   "name": "hyperion-api",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "Git-native GraphQL/REST runner with dual-plane schema discovery (schema from Dev, execute on Prod)",
+  "license": "MIT",
+  "author": "soulrose",
   "type": "module",
   "bin": {
     "hyperion": "bin/hyperion.mjs"
